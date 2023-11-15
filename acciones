@@ -1,368 +1,168 @@
 (function (Santander) {
-  var opportunity;
-  (function (opportunity) {
-      "use strict";
-      var opportunityForm = {
-          fields: {
-              FechaContratacion: "actualclosedate",
-              MercadoAbierto: "cxm_mercadoabierto",
-              fichaCliente: "cxm_mx_hst_per_fichacliente",
-              FaseActivaCierre: "cxm_faseactivabpfcierre",
-              ProductoACC: "cxm_productoaccid",
-              Producto: "cxm_subtipoaccid",
-              cliente: "parentcontactid",
-              banderaCierre:"cxm_banderacierreaccbpf",
-              CanalDerivacion: "cxm_canalderivacion",
-              TipoGestion: "cxm_tipogestion",
-              actividadCita: "cxm_actividadcitaid",
-              actividadLlamada: "cxm_actividadllamadaid",
-              tipoMedioContacto: "cxm_tipomediocontacto",
-              FechaCompromisoMA: "cxm_fechacompromiso"
- 
-          },
-          Form: {
+    let Task;
+    (function (Task) {
+        "use strict";
+        let currSeconds = 0;
+        let formContext;
+        let taskForm = {
+            fields: {
+                llamarA: "to",
+                referenteA: "regardingobjectid",
+                nombreCliente: "fullname",
+                buc: "cxm_bucid"
 
-          },
-          tabs: {
 
-          },
-          entity: {
-          },
-          timeline: {
-              timelineACC: "Timeline"
-          }
-      }
-      // Buscador del caso
-      // Autor: Heber Zabdiel HernÃ¡ndez MartÃ­Ã‚Â­nez
-      // Fecha: 22/09/2022
-      Santander.Opportunity.OportunidadCerrada = function (formContext) {
-          console.log("idOpportunidad");
-          console.log(Xrm);
-          return;
-          let idOpportunity = Xrm.Utility.getPageContext().input.entityId.replace("{", "").replace("}", "");
-          // Parameters
-          var parameters = {};
-          parameters.RazonParaEstado = 3; // Edm.Int32
-          parameters.Estado = 1; // Edm.Int32
+            },
+            timeline: "Timeline",
 
-          var req = new XMLHttpRequest();
-          req.open("POST", Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/opportunities(" + idOpportunity + ")/Microsoft.Dynamics.CRM.cxm_OportunidadCambiarEstado", true);
-          req.setRequestHeader("OData-MaxVersion", "4.0");
-          req.setRequestHeader("OData-Version", "4.0");
-          req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
-          req.setRequestHeader("Accept", "application/json");
-          req.onreadystatechange = function () {
-              if (this.readyState === 4) {
-                  req.onreadystatechange = null;
-                  if (this.status === 200 || this.status === 204) {
-                      console.log("Success");
-                  } else {
-                      console.log(this.responseText);
-                  }
-              }
-          };
-          req.send(JSON.stringify(parameters));
-      }
+        }
 
-      // Fecha de contrataciÃ³n
-      // Autor: Sergio Daniel Orzco Albor
-      // Fecha: 29/12/2022
-      /*Santander.Opportunity.FechaContratacionOportunidad = function (executionContext) {
-          let formContext = executionContext.getFormContext();
-          let contratacion = formContext.getAttribute(opportunityForm.fields.FechaContratacion).getValue();
-          if (contratacion) {
-          let FechaActual = new Date();
-          //let day = FechaActual.getDate(); 
-          let day = ('0' + FechaActual.getDate()).slice(-2);
-          let mes = FechaActual.getMonth() + 1;
-          let month = ('0' + mes).slice(-2);
-          let year = FechaActual.getFullYear();
-          let full = year + "/" + month + "/" + day;
-          console.log(full);
-          let day2 = ('0' + contratacion.getDate()).slice(-2);
-          let mesfull = contratacion.getMonth() + 1;
-          let month2 = ('0' + mesfull).slice(-2);
-          let year2 = contratacion.getFullYear();
-          let full2 = year2 + "/" + month2 + "/" + day2;
-          console.log(full2);
-              if (full > full2) {
-                  console.log("entro segundo if");
-                  formContext.getAttribute(opportunityForm.fields.FechaContratacion).setValue(FechaActual);
-                  //formContext.getControl("actualclosedate").setNotification("Fecha no valida");
-                  formContext.ui.setFormNotification("No se permiten seleccionar fechas anteriores", "WARNING", "WarningId");
-              }
-              else {
-                  //formContext.getControl("actualclosedate").clearNotification();;
-                  formContext.ui.clearFormNotification("WarningId");
-              }
-          }
-      }*/
+        // FunciÃƒÆ’Ã‚Â³n para setear el valor de referente a si el valor de llamar a es tipo contacto
+        // Autor: Rebeca Lizzet Galvan Benitez
+        // Fecha: 15 marzo 2023
+        // Modificacion: -- -- ----
+        Santander.Task.SetReferenteA = async function (executionContext) {
+            const formContext = executionContext.getFormContext();
 
-      Santander.Opportunity.FechaCompromisoMA = function (executionContext) {
-          let formContext = executionContext.getFormContext();
-          let contratacion = formContext.getAttribute(opportunityForm.fields.FechaCompromisoMA).getValue();
-          if (contratacion) {
-          let FechaActual = new Date();
-          let day = ('0' + FechaActual.getDate()).slice(-2);
-          let mes = FechaActual.getMonth() + 1;
-          let month = ('0' + mes).slice(-2);
-          let year = FechaActual.getFullYear();
-          let full = year + "/" + month + "/" + day;
-          console.log(full);
-          let day2 = ('0' + contratacion.getDate()).slice(-2);
-          let mesfull = contratacion.getMonth() + 1;
-          let month2 = ('0' + mesfull).slice(-2);
-          let year2 = contratacion.getFullYear();
-          let full2 = year2 + "/" + month2 + "/" + day2;
-          console.log(full2);
-              if (full > full2) {
-                  console.log("entro segundo if");
-                  formContext.getAttribute(opportunityForm.fields.FechaCompromisoMA).setValue(FechaActual);
-                  //formContext.getControl("actualclosedate").setNotification("Fecha no valida");
-                  formContext.ui.setFormNotification("No se permiten seleccionar fechas anteriores", "WARNING", "WarningId");
-              }
-              else {
-                  //formContext.getControl("actualclosedate").clearNotification();;
-                  formContext.ui.clearFormNotification("WarningId");
-              }
-          }
-      }
+            let contactLlamarA = formContext.getAttribute(taskForm.fields.llamarA).getValue();
 
-      Santander.Opportunity.camposObligatorios = function (executionContext) {
-          let formContext = executionContext.getFormContext();           
-          let fechaC = formContext.getAttribute(opportunityForm.fields.FechaContratacion);
-          let Prod = formContext.getAttribute(opportunityForm.fields.Producto);
-          //let cl = formContext.getAttribute(opportunityForm.fields.cliente).getValue();
-          
-              Prod.setRequiredLevel("required");
-              fechaC.setRequiredLevel("required");
-          
-      }
+            if (contactLlamarA.length > 0 && contactLlamarA[0].entityType === "contact")
+                formContext.getAttribute(taskForm.fields.referenteA).setValue(contactLlamarA);
+            else
+                formContext.getAttribute(taskForm.fields.referenteA).setValue(null);
+        }
 
-      Santander.Opportunity.botonAsignar = function (executionContext) {
-          //let formContext = executionContext.getFormContext();
-          //const boton = Xrm.Page.getControl("Assing");  
-          const roles = Xrm.Utility.getGlobalContext().userSettings.roles;
-          const existeRolDirector = Object.values(roles._collection).some(el => {
-              return "directorsucursal" === el.name.replaceAll(" ", "").toLowerCase()
-          })
-          return existeRolDirector;
-      }
+        Santander.Task.ShowhideSubgridContactabilidad = async function (executionContext) {
+            let formContext = executionContext.getFormContext();// get the form Context ontiene toda la informaciÃƒÂ³n del formulario.
+            let subject = formContext.getAttribute("subject").getValue();// get the value of accountname obtiene
+            let medioContacto = subject.split(' ').slice(-1)[0]; // obtener la ÃƒÂºltima palabra de asunto.
 
-   /*Santander.Opportunity.OportunidadForm = function (executionContext) {
-    let formContext = executionContext.getFormContext();
-    let mercado = formContext.getAttribute(opportunityForm.fields.MercadoAbierto).getValue();
-    var currentForm = formContext.ui.formSelector.getCurrentItem();
-    console.log(formContext.data.process.getSelectedStage().getCategory().getValue())
+            if (medioContacto == "CITA") {
 
-    var listOfAvailableForms = formContext.ui.formSelector.items.get();
-    var currentForm = formContext.ui.formSelector.getCurrentItem().getId();
-    if (mercado != null) {
+                formContext.getControl('grid_cita').setVisible(true);//Show Subgrid
+                formContext.getControl('grid_correo').setVisible(false);//Hide Subgrid
+                formContext.getControl('grid_llamada_sms').setVisible(false);//Hide Subgrid
+                formContext.getControl('grid_visita').setVisible(false);//Hide Subgrid
 
-        if (mercado == true && currentForm != "ed6b69c1-7c88-ed11-81ac-6045bd019be7"
-        )   {
-            listOfAvailableForms.forEach(element => {
-                if (element.getId() == "ed6b69c1-7c88-ed11-81ac-6045bd019be7") //Mercado Abierto
-                    element.navigate();
             }
-            );
-        }
-        else if (mercado == false && currentForm != "d876915b-8188-ed11-81ac-6045bd019817"
-        ) {
-            listOfAvailableForms.forEach(element => {
-                if (element.getId() == "d876915b-8188-ed11-81ac-6045bd019817") //Accion Comercial
-                    element.navigate();
-            });
-        }
+            else if (medioContacto == "VISITA") {
+                formContext.getControl('grid_cita').setVisible(false);
+                formContext.getControl('grid_correo').setVisible(false);
+                formContext.getControl('grid_llamada_sms').setVisible(false);
+                formContext.getControl('grid_visita').setVisible(true);
 
-    } 
-
-}
-*/      
-
-       // Funcion para obtener la url de producto a accionar
-        // Autor: Rebeca Lizzet Galvan
-        // Fecha: 17 Octubre 2023
-        // Modificacion: 03 NOVIEMBRE 2023  SE COMENTA POR QUE NO VA DERIVACION POR EL MOMENTO
-        
-        Santander.Opportunity.ObtenerURLProductoACC = async function (executionContext) {  
-         
-          var formContext = executionContext.getFormContext();           
-          /*     NOTA: NO BORRAR PARA CUANDO SE IMPLEMENTE DERIVACION  03112023   */
-          var canalder = formContext.getAttribute(opportunityForm.fields.CanalDerivacion).getValue();
-          var tipoGest = formContext.getAttribute(opportunityForm.fields.TipoGestion).getValue();
-          var mercado = formContext.getAttribute(opportunityForm.fields.MercadoAbierto).getValue();
-          console.log("Canal DerivaciÃ³n " + canalder);                                       
-          console.log("Tipo GestiÃ³n " + tipoGest);
-          if(!mercado && (formContext.getAttribute(opportunityForm.fields.banderaCierre).getValue() && (tipoGest == 2 || (tipoGest == 1 && canalder == 4))))                    
-          {                       
-              let idOpportunidad = Xrm.Utility.getPageContext().input.entityId.replace("{", "").replace("}", "");
-              console.log("ID Oportunidad " + idOpportunidad);
-              
-              const responseProduct = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/opportunities?$select=cxm_productoaccid,parentcontactid&$filter=opportunityid eq " + idOpportunidad)
-              if (!responseProduct.ok) return;
-              console.log("Producto...")            
-              const oportunidad = responseProduct.data.value[0];
-              const idproductoacc = oportunidad._cxm_productoaccid_value;            
-              const idcliente = oportunidad._parentcontactid_value;
-              console.log(idproductoacc);
-
-              if(idproductoacc != undefined)
-              {
-                  const responseUrl = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_mx_cat_acc_productoaccs?$select=cxm_urlaccionableid&$filter=cxm_mx_cat_acc_productoaccid eq " + idproductoacc)
-                  if (!responseUrl.ok) return;
-                  console.log("responseUrl...")            
-                  const urlAccionable = responseUrl.data.value[0];
-                  const idurlaccionable = urlAccionable._cxm_urlaccionableid_value;            
-                  console.log(idurlaccionable);
-
-                  if(idurlaccionable != undefined)
-                  {
-                      const response= await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_mx_cat_acc_urlaccionables?$select=cxm_identificadormodulo&$filter=cxm_mx_cat_acc_urlaccionableid eq " + idurlaccionable)
-                      if (!response.ok) return;
-                      console.log("response...")            
-                      const urlAcc = response.data.value[0];
-                      const modulo = urlAcc.cxm_identificadormodulo;            
-                      console.log(modulo);
-
-                      if(modulo != undefined)
-                      {
-                          const idEjecutivo = Xrm.Utility.getGlobalContext().userSettings.userId.replaceAll("{", "").replaceAll("}", "");
-                          console.log("idEjecutivo: "+ idEjecutivo+ " modulo: " + modulo);                                                                                                         
-                          let requestOportunidad = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_accionablemodulo", "POST", {modulos : "["+modulo+"]", clientId: idcliente});
-                          if (requestOportunidad.data.urls) {  
-                              let response = JSON.parse(requestOportunidad.data.urls); 
-                              window.open(response, '_blank')                                                                                                                                     
-                          }
-                      }
-                  }
-              }
-          }
-      }
-      // Funcion al abrir la oportunidad
-      // Autor: Rebeca Lizzet Galvan
-      // Fecha: 17 Octubre 2023
-      // Modificacion: -- -- ----      
-      Santander.Opportunity.SetBandera = function (executionContext) {
-        let formContext = executionContext.getFormContext();                                        
-        formContext.getAttribute("cxm_banderacierreaccbpf").setValue(false);
-                                          
-      }
-
-      async function requestAPI(url, method = "GET", body = null) {
-          let resReq = {};
-          let initReq = {
-            method: method,
-            headers: {
-              "Accept": "application/json",
-              "Content-Type": "application/json; charset=utf-8",
-              "OData-MaxVersion": "4.0",
-              "OData-Version": "4.0",
-              "Prefer": "odata.include-annotations=*"
             }
-          };
-    
-          if (body) {
-            initReq.body = JSON.stringify(body);
-          }
-    
-          try {
-            const response = await window.fetch(url, initReq);
-            resReq.status = response.status;
-            resReq.ok = response.ok;
-    
-            if (response.ok) {
-              try {
-                resReq.data = await response.json();
-              } catch {
-                resReq.data = response;
-              }
-            } else {
-              resReq.error = response;
+            else if (medioContacto == "EMAIL") {
+                formContext.getControl('grid_cita').setVisible(false);
+                formContext.getControl('grid_correo').setVisible(true);
+                formContext.getControl('grid_llamada_sms').setVisible(false);
+                formContext.getControl('grid_visita').setVisible(false);
             }
-          } catch (error) {
-            resReq.status = 400;
-            resReq.ok = false;
-            resReq.error = error;
-          }
-          return resReq;
+            else if (medioContacto == "SMS") {
+                formContext.getControl('grid_cita').setVisible(false);
+                formContext.getControl('grid_correo').setVisible(false);
+                formContext.getControl('grid_llamada_sms').setVisible(true);
+                formContext.getControl('grid_visita').setVisible(false);
+            }
+            else if (medioContacto == "LLAMADA") {
+                formContext.getControl('grid_cita').setVisible(false);
+                formContext.getControl('grid_correo').setVisible(false);
+                formContext.getControl('grid_llamada_sms').setVisible(true);
+                formContext.getControl('grid_visita').setVisible(false);
+            }
+            else {
+                formContext.getControl('grid_cita').setVisible(false);
+                formContext.getControl('grid_correo').setVisible(false);
+                formContext.getControl('grid_llamada_sms').setVisible(false);
+                formContext.getControl('grid_visita').setVisible(false);
+            }
+
         }
 
-       
-  // Funcion para obtener el valor actividad en formulario BPF
-  // Autor: Luis Bermudez
-  // Fecha: 17 Octubre 2023
-  // Modificacion: -- -- ----
-  Santander.Opportunity.getActividadAbierta = async function (executionContext) {
-    console.log("entra a funcion");
-    let formContext = executionContext.getFormContext();
-    let medio = formContext.getAttribute(contactForm.fields.actividadLlamada)?.getSelectedOption() ?? null;
-    const dataEje = Xrm.Utility.getGlobalContext().userSettings
-    const IDEjecutivo = dataEje.userId.substring(1, dataEje.userId.length - 1);
-    const actividadLlamadaFetchXML = `
-        <fetch>
-         <entity name="phonecall" >
-            <attribute name="subject" />
-            <attribute name="activityid" />
-            <attribute name="statecode" />
-            <filter type="and" >
-                <condition attribute="statecode" operator="eq" value="0" />
-                <condition attribute="createdby" operator="eq" value="`+ IDEjecutivo + `" />
-                <condition attribute="createdon" operator="today" />
-            </filter>
-            <link-entity name="systemuser" from="systemuserid" to="createdby" />
-         </entity>
-        </fetch>`;
-
-    Xrm.WebApi.retrieveMultipleRecords("phonecall", "?fetchXml=" + actividadLlamadaFetchXML).then(
-      function success(result) {
-        let setPhone = new Array();
-        setPhone[0] = new Object();
-        setPhone[0].id = result.entities[0]["activityid"]
-        setPhone[0].name = result.entities[0]["subject"]
-        setPhone[0].entityType = "phonecall"
-        if (medio.text == "Llamada" || medio.text == "SMS") {
-          formContext.getAttribute(contactForm.fields.actividadLlamada).setValue(setPhone);
-          console.log("Imprime GUID phonecall: ", setPhone)
+        Santander.Task.FichaClienteAC = async function (executionContext) {
+            const formContext = executionContext.getFormContext();
+            const dataEje = Xrm.Utility.getGlobalContext().userSettings;
+            const usuarioid = dataEje.userId.substring(1, dataEje.userId.length - 1);
+            let clienteid = formContext.data.entity.getId();
+            let nombreCliente = formContext.getAttribute(taskForm.fields.nombreCliente).getValue();
+            let buc = formContext.getAttribute(taskForm.fields.buc).getValue();
+            let tipoOption = 1;
+            // Parameters
+            fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_AuditoriaFichaCliente", {
+                method: "POST",
+                headers: {
+                    "OData-MaxVersion": "4.0",
+                    "OData-Version": "4.0",
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    nombreCliente,
+                    usuarioid,
+                    clienteid,
+                    texto: "visualizo la ficha del cliente ",
+                    buc,
+                    tipoOption
+                })
+            }).then(
+                function success(response) {
+                    return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
+                }
+            ).then(function (responseObjects) {
+                let response = responseObjects[0];
+                let responseBody = responseObjects[1];
+                let result = responseBody;
+                let status = result["status"]; // Edm.String
+                if(status.Id){
+                    // Refrescar timeline
+                    formContext.getControl(taskForm.fields.timeline).refresh();
+                }
+            }).catch(function (error) {
+                console.log(error.message);
+            })
         }
-      },
-      function (error) {
-        console.log(error.message);
-      }
-    );
-
-    const actividadCitaFetchXML = `
-        <fetch>
-        <entity name="appointment" >
-            <attribute name="subject" />
-            <attribute name="activityid" />
-            <attribute name="statecode" />
-            <filter type="and" >
-            <condition attribute="statecode" operator="eq" value="0" />
-            <condition attribute="createdby" operator="eq" value="`+ IDEjecutivo + `" />
-            <condition attribute="createdon" operator="today" />
-        </filter>
-        </entity>
-        </fetch>`;
-
-    Xrm.WebApi.retrieveMultipleRecords("appointment", "?fetchXml=" + actividadCitaFetchXML).then(
-      function success(result) {
-        let setAppo = new Array();
-        setAppo[0] = new Object();
-        setAppo[0].id = result.entities[0]["activityid"]
-        setAppo[0].name = result.entities[0]["subject"]
-        setAppo[0].entityType = "appointment"
-        if (medio.text == "Visita" || medio.text == "Cita") {
-          formContext.getAttribute(contactForm.fields.actividadCita).setValue(setAppo);
-          console.log("Imprime GUID appointment: ", setAppo)
+        Santander.Task.gestionarACC = async function (executionContext) {
+            const formContext = executionContext.getFormContext();
+            const dataEje = Xrm.Utility.getGlobalContext().userSettings;
+            const usuarioid = dataEje.userId.substring(1, dataEje.userId.length - 1);
+            let clienteid = formContext.data.entity.getId();
+            let nombreCliente = formContext.getAttribute(taskForm.fields.nombreCliente).getValue();
+            let buc = formContext.getAttribute(taskForm.fields.buc).getValue();
+            let tipoOption = 1;
+            // Parameters
+            fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_AuditoriaFichaCliente", {
+                method: "POST",
+                headers: {
+                    "OData-MaxVersion": "4.0",
+                    "OData-Version": "4.0",
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    nombreCliente,
+                    usuarioid,
+                    clienteid,
+                    texto: "visualizÃ³ las ACC del cliente ",
+                    buc,
+                    tipoOption
+                })
+            }).then(
+                function success(response) {
+                    return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
+                }
+            ).then(function (responseObjects) {
+                let response = responseObjects[0];
+                let responseBody = responseObjects[1];
+                let result = responseBody;
+                let status = result["status"]; // Edm.String
+                if(status.Id){
+                    // Refrescar timeline
+                    formContext.getControl(taskForm.fields.timeline).refresh();
+                }
+            }).catch(function (error) {
+                console.log(error.message);
+            })
         }
-      },
-      function (error) {
-        console.log(error.message);
-      }
-    );
-  }
-    
 
-  })(opportunity = Santander.Opportunity || (Santander.Opportunity = {}));
+    })(Task = Santander.Task || (Santander.Task = {}));
 })(window.Santander = window.Santander || {});
