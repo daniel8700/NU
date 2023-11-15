@@ -1,2075 +1,368 @@
-// JavaScript source codee
 (function (Santander) {
-    var Contact;
-    (function (Contact) {
-        "use strict";
-        var pointerGSDC = null; //GetSesionDistribuidaCRM
-        var pointerGSD = null;
-        var currSeconds = 0;
-        var formContext;
-        var cantidadmensajesespera = 1;
-        var auxcantidadmensajesespera = 1;
-        var tiempodesbloqueoficha = 10;
-        var contactForm = {
-            fields: {
-                name: "cxm_name",
-                edad: "cxm_edad",
-                sexo: "gendercode",
-                clienteContactado: "cxm_clientecontactado",
-                opcionesNoContactado: "cxm_opcionesclientenocontactado",
-                tipoMedioDeContacto: "cxm_tipomediocontacto",
-                telefonosContacto: "cxm_telefonoscontacto",
-                correosContacto: "cxm_correoscontacto",
-                direccionesContacto: "cxm_direccionescontacto",
-                respuestaActividad: "cxm_respuestaactividadid",
-                motivo: "cxm_comentariootro",
-                motivoRespuesta: "cxm_motivorespuestaactividadid",
-                actividadLlamada: "cxm_actividadllamadaid",
-                actividadCita: "cxm_actividadcitaid",
-                EjecutivoConPermiso: "cxm_usuariopermisofichaid",
-                Nominahabiente: "cxm_nominahabiente",
-                TipoNominahabiente: "cxm_tiponominahabiente",
-                Telefono: "mobilephone",
-                Nombre: "firstname",
-                Apellidos: "lastname",
-                usuariopermisoficha: "cxm_usuariopermisofichaid",
-                pcfAccionesComerciales: "cxm_pcf_accionescomerciales",
-                pcfMarcas: "cxm_pcf_marcas",
-                marcaDeClienteBloqueado: "cxm_mx_det_per_kpi",
-                fichaCliente: "cxm_mx_hst_per_fichacliente",
-                idArbolOficial: "cxm_arbol_claveid",
-                curp: "cxm_curp",
-                rfc: "cxm_rfc"
-            },
-            optionsSet: {
-                sexo: {
-                    masculino: 1,
-                    femenino: 2,
-                    noDefinido: 3
-                }
-            },
-            labels: {
-                sexo: {
-                    hombre: "Hombre",
-                    mujer: "Mujer",
-                    noDefinido: "No definido"
-                }
-            },
-            tabs: {
-                contactabilidad: "tab_contactabilidad",
-                gestionacc: "tab_gestionACC",
-                infoCliente: "tab_infocliente",
-                actividadLaboral: "tab_act_laboral",
-                contactosRelacionados: "tab_datoscontactocliente"
-            },
-            sections: {
-                accionesComerciales: "tab_infocliente_seccion_accionescomerciales",
-                valorCliente: "tab_infocliente_seccion_5",
-                relacionadosTutela: "tab_datoscontactocliente_section_conexiones",
-                relacionadosNoTutela: "tab_datoscontactocliente_section_conexiones2",
-                contactabilidadNotificaciones: "tab_7_section_4",
-                contactabilidadPersonal: "tab_7_section_1",
-                contactabilidadLaboral: "tab_7_section_5",
-                contactabilidadAlternativo: "tab_7_section_6"
-            },
-            custompage: {
-                buscador: "cxm_buscadorcliente_9cb5c",
-                relacionContacto: "cxm_formulariocrcontactorelacionado_f9f07",
-                bloqueoCliente: "cxm_bloqueocliente_c931d",
-                desbloqueoFicha: "cxm_desbloqueoficha_9a6e6",
-                clienteContactado: "cxm_clientecontactado_73708"
-            },
-            subgrid: {
-                contactoRelacionadoTutela: "subgrid_relacionesCliente",
-                contactoRelacionadoNoTutela: "subgrid_relacionesCliente2",
-                subgridOportunidad: "Subgrid_new_3",
-                subgridMercado: "Subgrid_new_4"
+  var opportunity;
+  (function (opportunity) {
+      "use strict";
+      var opportunityForm = {
+          fields: {
+              FechaContratacion: "actualclosedate",
+              MercadoAbierto: "cxm_mercadoabierto",
+              fichaCliente: "cxm_mx_hst_per_fichacliente",
+              FaseActivaCierre: "cxm_faseactivabpfcierre",
+              ProductoACC: "cxm_productoaccid",
+              Producto: "cxm_subtipoaccid",
+              cliente: "parentcontactid",
+              banderaCierre:"cxm_banderacierreaccbpf",
+              CanalDerivacion: "cxm_canalderivacion",
+              TipoGestion: "cxm_tipogestion",
+              actividadCita: "cxm_actividadcitaid",
+              actividadLlamada: "cxm_actividadllamadaid",
+              tipoMedioContacto: "cxm_tipomediocontacto",
+              FechaCompromisoMA: "cxm_fechacompromiso"
+ 
+          },
+          Form: {
+
+          },
+          tabs: {
+
+          },
+          entity: {
+          },
+          timeline: {
+              timelineACC: "Timeline"
+          }
+      }
+      // Buscador del caso
+      // Autor: Heber Zabdiel HernÃ¡ndez MartÃ­Ã‚Â­nez
+      // Fecha: 22/09/2022
+      Santander.Opportunity.OportunidadCerrada = function (formContext) {
+          console.log("idOpportunidad");
+          console.log(Xrm);
+          return;
+          let idOpportunity = Xrm.Utility.getPageContext().input.entityId.replace("{", "").replace("}", "");
+          // Parameters
+          var parameters = {};
+          parameters.RazonParaEstado = 3; // Edm.Int32
+          parameters.Estado = 1; // Edm.Int32
+
+          var req = new XMLHttpRequest();
+          req.open("POST", Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/opportunities(" + idOpportunity + ")/Microsoft.Dynamics.CRM.cxm_OportunidadCambiarEstado", true);
+          req.setRequestHeader("OData-MaxVersion", "4.0");
+          req.setRequestHeader("OData-Version", "4.0");
+          req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+          req.setRequestHeader("Accept", "application/json");
+          req.onreadystatechange = function () {
+              if (this.readyState === 4) {
+                  req.onreadystatechange = null;
+                  if (this.status === 200 || this.status === 204) {
+                      console.log("Success");
+                  } else {
+                      console.log(this.responseText);
+                  }
+              }
+          };
+          req.send(JSON.stringify(parameters));
+      }
+
+      // Fecha de contrataciÃ³n
+      // Autor: Sergio Daniel Orzco Albor
+      // Fecha: 29/12/2022
+      /*Santander.Opportunity.FechaContratacionOportunidad = function (executionContext) {
+          let formContext = executionContext.getFormContext();
+          let contratacion = formContext.getAttribute(opportunityForm.fields.FechaContratacion).getValue();
+          if (contratacion) {
+          let FechaActual = new Date();
+          //let day = FechaActual.getDate(); 
+          let day = ('0' + FechaActual.getDate()).slice(-2);
+          let mes = FechaActual.getMonth() + 1;
+          let month = ('0' + mes).slice(-2);
+          let year = FechaActual.getFullYear();
+          let full = year + "/" + month + "/" + day;
+          console.log(full);
+          let day2 = ('0' + contratacion.getDate()).slice(-2);
+          let mesfull = contratacion.getMonth() + 1;
+          let month2 = ('0' + mesfull).slice(-2);
+          let year2 = contratacion.getFullYear();
+          let full2 = year2 + "/" + month2 + "/" + day2;
+          console.log(full2);
+              if (full > full2) {
+                  console.log("entro segundo if");
+                  formContext.getAttribute(opportunityForm.fields.FechaContratacion).setValue(FechaActual);
+                  //formContext.getControl("actualclosedate").setNotification("Fecha no valida");
+                  formContext.ui.setFormNotification("No se permiten seleccionar fechas anteriores", "WARNING", "WarningId");
+              }
+              else {
+                  //formContext.getControl("actualclosedate").clearNotification();;
+                  formContext.ui.clearFormNotification("WarningId");
+              }
+          }
+      }*/
+
+      Santander.Opportunity.FechaCompromisoMA = function (executionContext) {
+          let formContext = executionContext.getFormContext();
+          let contratacion = formContext.getAttribute(opportunityForm.fields.FechaCompromisoMA).getValue();
+          if (contratacion) {
+          let FechaActual = new Date();
+          let day = ('0' + FechaActual.getDate()).slice(-2);
+          let mes = FechaActual.getMonth() + 1;
+          let month = ('0' + mes).slice(-2);
+          let year = FechaActual.getFullYear();
+          let full = year + "/" + month + "/" + day;
+          console.log(full);
+          let day2 = ('0' + contratacion.getDate()).slice(-2);
+          let mesfull = contratacion.getMonth() + 1;
+          let month2 = ('0' + mesfull).slice(-2);
+          let year2 = contratacion.getFullYear();
+          let full2 = year2 + "/" + month2 + "/" + day2;
+          console.log(full2);
+              if (full > full2) {
+                  console.log("entro segundo if");
+                  formContext.getAttribute(opportunityForm.fields.FechaCompromisoMA).setValue(FechaActual);
+                  //formContext.getControl("actualclosedate").setNotification("Fecha no valida");
+                  formContext.ui.setFormNotification("No se permiten seleccionar fechas anteriores", "WARNING", "WarningId");
+              }
+              else {
+                  //formContext.getControl("actualclosedate").clearNotification();;
+                  formContext.ui.clearFormNotification("WarningId");
+              }
+          }
+      }
+
+      Santander.Opportunity.camposObligatorios = function (executionContext) {
+          let formContext = executionContext.getFormContext();           
+          let fechaC = formContext.getAttribute(opportunityForm.fields.FechaContratacion);
+          let Prod = formContext.getAttribute(opportunityForm.fields.Producto);
+          //let cl = formContext.getAttribute(opportunityForm.fields.cliente).getValue();
+          
+              Prod.setRequiredLevel("required");
+              fechaC.setRequiredLevel("required");
+          
+      }
+
+      Santander.Opportunity.botonAsignar = function (executionContext) {
+          //let formContext = executionContext.getFormContext();
+          //const boton = Xrm.Page.getControl("Assing");  
+          const roles = Xrm.Utility.getGlobalContext().userSettings.roles;
+          const existeRolDirector = Object.values(roles._collection).some(el => {
+              return "directorsucursal" === el.name.replaceAll(" ", "").toLowerCase()
+          })
+          return existeRolDirector;
+      }
+
+   /*Santander.Opportunity.OportunidadForm = function (executionContext) {
+    let formContext = executionContext.getFormContext();
+    let mercado = formContext.getAttribute(opportunityForm.fields.MercadoAbierto).getValue();
+    var currentForm = formContext.ui.formSelector.getCurrentItem();
+    console.log(formContext.data.process.getSelectedStage().getCategory().getValue())
+
+    var listOfAvailableForms = formContext.ui.formSelector.items.get();
+    var currentForm = formContext.ui.formSelector.getCurrentItem().getId();
+    if (mercado != null) {
+
+        if (mercado == true && currentForm != "ed6b69c1-7c88-ed11-81ac-6045bd019be7"
+        )   {
+            listOfAvailableForms.forEach(element => {
+                if (element.getId() == "ed6b69c1-7c88-ed11-81ac-6045bd019be7") //Mercado Abierto
+                    element.navigate();
             }
-        }
-        Santander.Contact.Contactabilidadvisible = async function (executionContext) {
-            formContext = executionContext.getFormContext();
-            let tabCon = formContext.ui.tabs.get(contactForm.tabs.contactabilidad);
-            tabCon.setVisible(false);
-            let intervalOportunidades = setInterval(async () => {
-                let numOportunidades = sessionStorage.getItem("numOportunidades");
-                if (numOportunidades !== null) {
-                    let tutela = JSON.parse(sessionStorage.getItem("cxm_tutela"));
-                    clearInterval(intervalOportunidades);
-                    if (numOportunidades == 0 && tutela.tutela)
-                        tabCon.setVisible(true)
-                    sessionStorage.removeItem("numOportunidades");
-                }
-                else {
-                    tabCon.setVisible(false);
-                }
-                const roles = Xrm.Utility.getGlobalContext().userSettings.roles;
-                const existeRolNacional = Object.values(roles._collection).some(el => {
-                    return "nacional" === el.name.replaceAll(" ", "").toLowerCase()
-                });
-                const existeRolRegional = Object.values(roles._collection).some(el => {
-                    return "regional" === el.name.replaceAll(" ", "").toLowerCase()
-                });
-                const existeRolSubSucursal = Object.values(roles._collection).some(el => {
-                    return "subdirectorsucursal" === el.name.replaceAll(" ", "").toLowerCase()
-                });
-                const existeRolDirector = Object.values(roles._collection).some(el => {
-                    return "directorsucursal" === el.name.replaceAll(" ", "").toLowerCase()
-                });
-                const existeRolZonal = Object.values(roles._collection).some(el => {
-                    return "zonal" === el.name.replaceAll(" ", "").toLowerCase()
-                });
-
-                if (existeRolNacional || existeRolRegional || existeRolSubSucursal || existeRolDirector || existeRolZonal) {
-                    tabCon.setVisible(true)
-                }
-                else {
-                    tabCon.setVisible(false)
-                }
-
-                //let permiso = await getPermiso("3e1e2d9b-e75e-ed11-9561-6045bd003e8e", "lectura") == "TRUE";
-                //if (permiso) {
-                //tabCon.setVisible(true);
-                //}
-
-            }, 1000);
-
-        }
-
-        // FunciÃ³n al iniciar la Ficha del cliente para detectar si mostrar informaciÃ³n voluble (CURP, RFC y la secciÃ³n de Valor del cliente) solo si es ejecutivo tutela
-        // Autor: Rebeca Lizzet Galvan Benitez
-        // Fecha: 04 enero 2023
-        // Modificacion: -- -- ----
-        Santander.Contact.ValidaTutela = async function (executionContext) {
-            Santander.Contact.retriveVariables();
-            formContext = executionContext.getFormContext();
-
-            const idEjecutivo = Xrm.Utility.getGlobalContext().userSettings.userId.replaceAll("{", "").replaceAll("}", "");
-            let idClaveArbol = formContext.getAttribute(contactForm.fields.idArbolOficial).getValue();
-            if (idClaveArbol != null && idClaveArbol != undefined) {
-                const idArbolTutela = idClaveArbol[0].id.replaceAll("{", "").replaceAll("}", "");
-                let idTutela = await Xrm.WebApi.online.retrieveRecord("cxm_mx_cat_usu_arbol_oficial", idArbolTutela, "?$select=_cxm_usuarioid_value");
-                if (formContext.getAttribute(contactForm.fields.usuariopermisoficha).getValue() != null) {
-                    formContext.getControl(contactForm.fields.curp).setVisible(true);
-                    formContext.getControl(contactForm.fields.rfc).setVisible(true);
-                    let tabObj = formContext.ui.tabs.get(contactForm.tabs.infoCliente);
-                    tabObj.sections.get(contactForm.sections.valorCliente).setVisible(true);
-
-                }
-                else if ((idTutela._cxm_usuarioid_value == null || idTutela._cxm_usuarioid_value == undefined) || idEjecutivo !== idTutela._cxm_usuarioid_value.toUpperCase()) {
-                    formContext.getControl(contactForm.fields.curp).setVisible(false);
-                    formContext.getControl(contactForm.fields.rfc).setVisible(false);
-                    let tabObj = formContext.ui.tabs.get(contactForm.tabs.infoCliente);
-                    tabObj.sections.get(contactForm.sections.valorCliente).setVisible(false);
-                }
-            }
-            else {
-                formContext.getControl(contactForm.fields.curp).setVisible(false);
-                formContext.getControl(contactForm.fields.rfc).setVisible(false);
-                let tabObj = formContext.ui.tabs.get(contactForm.tabs.infoCliente);
-                tabObj.sections.get(contactForm.sections.valorCliente).setVisible(false);
-            }
-        }
-
-
-        // Funcion al iniciar la vista
-        // Autor: Hector Antonio Mota Galvan
-        // Fecha: 26 octubre 2020
-        // Modificacion: -- -- ----
-        Santander.Contact.OnLoad = async function (executionContext) {
-            formContext = executionContext.getFormContext();
-            Santander.Contact.setAuthConfig();
-            Santander.Contact.SessionTutela();
-            Santander.Contact.VisibilidadContactabilidad();
-            //Santander.Contact.Contactabilidadvisible(executionContext);
-            Santander.Contact.retriveVariables();
-            Santander.Contact.OcultarTabMercadoAbierto(executionContext);
-
-            // await Santander.Contact.ApiBiometricos(formContext);
-            await Santander.Contact.VerContactosRelacionados(formContext);
-            await Santander.Contact.VerActividadLaboral(formContext);
-            var alertStrings = { confirmButtonLabel: "Aceptar", text: "Se cargo el formulario", title: "Carga completa" };
-            var alertOptions = { height: 120, width: 260 };
-            var controlContainer = formContext.getControl("shell-container");
-            Santander.Contact.iniciarTimer();
-            formContext.getAttribute(contactForm.fields.pcfAccionesComerciales)?.setSubmitMode("never");
-            formContext.getControl(contactForm.fields.actividadCita)?.addPreSearch(Santander.Contact.filterContactCita);
-            formContext.getControl(contactForm.fields.actividadLlamada)?.addPreSearch(Santander.Contact.filterContactLlamada);
-            //Santander.Contact.visualizaTimeline(); //Para llamar la funcion
-            // ValidaciÃƒÆ’Ã‚Â³n para cuando idCliente es nulo -- Autor: Maria Esther Aquino -- Fecha: 11 Abril 2023
-            var idCliente = null;
-            if (Xrm.Utility.getPageContext().input.entityId != null) {
-                idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-                Santander.Contact.QuitarPermisoTutela(idCliente);
-                Santander.Contact.CalculoAntiguedad(formContext);
-            }
-            formContext.ui.tabs.get("tab_gestion_ac").addTabStateChange(() => { Santander.Contact.LimpiarDatos(executionContext) });
-
-            let clientId = Xrm.Utility.getPageContext().input.entityId;
-            clientId = clientId.substring(1, clientId.length - 1);
-            const reqClient = await requestApiAuth("/api/data/v9.2/contacts(" + clientId + ")?$select=cxm_bucid");
-            const userData = reqClient.data;
-            const envBiometricos = await getENV();
-            await verifyActiveBiometricos(userData.cxm_bucid, envBiometricos);
-        }
-
-        // Funcion para limpiar datos de un cliente contactado o no
-        // Autor: Arturo Cesar Vilchis Serrano
-        // Fecha: 05 Julio 2022
-        // Modificacion: -- -- ----
-        Santander.Contact.LimpiarDatos = function (executionContext) {
-            var formContext = executionContext.getFormContext();
-
-            formContext.getAttribute(contactForm.fields.motivo).setValue(null);
-            formContext.getAttribute(contactForm.fields.telefonosContacto).setValue(null);
-            formContext.getAttribute(contactForm.fields.correosContacto).setValue(null);
-            formContext.getAttribute(contactForm.fields.direccionesContacto).setValue(null);
-            formContext.getAttribute(contactForm.fields.clienteContactado).setValue(null);
-            formContext.getAttribute(contactForm.fields.clienteContactado).fireOnChange();
-            formContext.getAttribute(contactForm.fields.actividadLlamada).setValue(null);
-            formContext.getAttribute(contactForm.fields.actividadCita).setValue(null);
-        }
-
-        // Funcion del filtrado a campo actividad cita
-        // Autor: Jesus E Rojas Pedraza
-        //Fecha: 29/12/2022
-        Santander.Contact.filterContactCita = function () {
-            const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-            var contactID = "<filter type='and'><condition attribute='regardingobjectid' operator='eq' value='" + idCliente + "'/></filter>";
-            formContext.getControl(contactForm.fields.actividadCita).addCustomFilter(contactID);
-        }
-        // Funcion del filtrado a campo actividad llamada
-        // Autor: Jesus E Rojas Pedraza
-        //Fecha: 29/12/2022
-        Santander.Contact.filterContactLlamada = function () {
-            const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-            var contactID = "<filter type='and'><condition attribute='regardingobjectid' operator='eq' value='" + idCliente + "'/></filter>";
-            formContext.getControl(contactForm.fields.actividadLlamada).addCustomFilter(contactID);
-        }
-        // Funcion al guardar la vista
-        // Autor: Hector Antonio Mota Galvan
-        // Fecha: 26 octubre 2020
-        // Modificacion: -- -- ----
-        Santander.Contact.OnSave = function (executionContext) {
-
-        }
-
-        // Funcion visualizar timeline ficha cliente
-        // Autor: Luis Bermudez Dionicio
-        // Fecha: 02/01/2023
-        // Modificacion: -- -- ----
-        Santander.Contact.visualizaTimeline = async function () {
-            const dataEje = Xrm.Utility.getGlobalContext().userSettings
-            const IDEjecutivo = dataEje.userId.substring(1, dataEje.userId.length - 1);
-
-            const formatearFecha = fecha => {
-                const mes = fecha.getMonth() + 1;
-                const dia = fecha.getDate();
-                let hour = fecha.getHours();
-                const ampm = hour >= 12 ? 'pm' : 'am';
-                hour = (hour % 12) || 12;
-                let hourFinal = hour;
-                const minutos = fecha.getMinutes();
-                const segundos = fecha.getSeconds();
-
-                return `${(dia < 10 ? '0' : '').concat(dia)}/${(mes < 10 ? '0' : '').concat(mes)}/${fecha.getFullYear()}, ${(hourFinal < 10 ? '0' : '').concat(hourFinal)}:${(minutos < 10 ? '0' : '').concat(minutos)}:${(segundos < 10 ? '0' : '').concat(segundos)}` + " " + ampm;
-
-            };
-            const fechaDeHoy = new Date();
-            const fechaFormateada = formatearFecha(fechaDeHoy);
-            const idCliente = Xrm.Utility.getPageContext().input.entityId
-            const [dataClient, claveOficial] = await Promise.all([
-                Xrm.WebApi.online.retrieveRecord("contact", idCliente.substring(1, idCliente.length - 1), "?$select=fullname"),
-                Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_cat_usu_arbol_oficial", "?$select=cxm_claveoficial&$filter=_cxm_usuarioid_value eq " + IDEjecutivo)
-            ]);
-            let idActividad = 0;
-
-            await Xrm.WebApi.createRecord(contactForm.fields.fichaCliente, {
-                "regardingobjectid_contact_cxm_mx_hst_per_fichacliente@odata.bind": "/contacts(" + idCliente.substring(1, idCliente.length - 1) + ")",
-                description: "El ejecutivo " + dataEje.userName + " visualizo la ficha del cliente, " + fechaFormateada,
-                cxm_ejecutivo: dataEje.userName,
-                "cxm_ejecutivoid_cxm_mx_hst_per_fichacliente@odata.bind": "/systemusers(" + IDEjecutivo + ")",
-                cxm_cliente: dataClient.fullname,
-                cxm_claveoficial: claveOficial.entities.length > 0 ? claveOficial.entities[0].cxm_claveoficial : 'sin clave de oficial'
-            }).then(
-                function success(result) {
-                    idActividad = result.id
-                },
-                function (error) {
-                    console.log(error.message);
-                }
-            );
-            await Xrm.WebApi.updateRecord("cxm_mx_hst_per_fichacliente", idActividad, { "statecode": 1 });
-
-            formContext.getControl(contactForm.timeline.timelineACC).refresh();
-        }
-
-
-        Santander.Contact.onChangeGestionAcciones = function (executionContext) {
-            var formContext = executionContext.getFormContext();
-            let valor = formContext.getAttribute(contactForm.fields.pcfAccionesComerciales).getValue();
-            if (valor.includes("{")) {
-                let idOpportunity = valor.replace("{", "").replace("}", "");
-                // Parameters
-                var parameters = {};
-                parameters.RazonParaEstado = 3; // Edm.Int32
-                parameters.Estado = 1; // Edm.Int32
-
-                var req = new XMLHttpRequest();
-                req.open("POST", Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/opportunities(" + idOpportunity + ")/Microsoft.Dynamics.CRM.cxm_OportunidadCambiarEstado", true);
-                req.setRequestHeader("OData-MaxVersion", "4.0");
-                req.setRequestHeader("OData-Version", "4.0");
-                req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
-                req.setRequestHeader("Accept", "application/json");
-                req.onreadystatechange = function () {
-                    if (this.readyState === 4) {
-                        req.onreadystatechange = null;
-                        if (this.status === 200 || this.status === 204) {
-                            console.log("Success");
-                        } else {
-                            console.log(this.responseText);
-                        }
-                    }
-                };
-                req.send(JSON.stringify(parameters));
-            } else {
-                if (valor.includes("Gestion")) {
-                    formContext.ui.tabs.get(contactForm.tabs.gestionacc).setVisible(true);
-                    formContext.ui.tabs.get(contactForm.tabs.gestionacc).setFocus();
-                }
-                if (valor.includes("Contactos")) {
-                    formContext.ui.tabs.get(contactForm.tabs.contactabilidad).setVisible(true);
-                    formContext.ui.tabs.get(contactForm.tabs.contactabilidad).setFocus();
-                }
-            }
-        }
-        // Funcion para abrir buscador de cliente
-        // Autor: Jesus Enrique Rojas Pedraza
-        // Fecha: 08 Agosto 2022
-        Santander.Contact.BuscarCliente = function () {
-            var pageInput = {
-                pageType: "custom",
-                name: contactForm.custompage.buscador
-            };
-            var navigationOptions = {
-                target: 2,
-                position: 2,
-                width: { value: 500, unit: "px" },
-                title: "Busqueda Avanzada"
-            };
-            Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(function () { }).catch(function (error) { });
-        }
-        // Funcion para abrir formulario de creaciÃ³n rapida de cliente
-        // Autor: Jorge A. GonzÃ¡lez Valencia
-        // Fecha: 15 Diciembre 2022
-        Santander.Contact.ContactoRelacionado = function (executionContext) {
-            var formContext = executionContext;
-            var _recordId = formContext.data.entity.getId();
-            _recordId = _recordId.replace("{", "").replace("}", "");
-            var _entityName = formContext.data.entity.getEntityName();
-            var pageInput = {
-                pageType: "custom",
-                name: contactForm.custompage.relacionContacto,
-                entityName: _entityName,
-                recordId: _recordId
-            };
-            var navigationOptions = {
-                target: 2,
-                position: 2,
-                width: { value: 500, unit: "px" },
-                title: "Contacto relacionado"
-            };
-            let tutela = JSON.parse(sessionStorage.getItem("cxm_tutela"));
-            if (tutela.tutela) {
-                Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(function () { }).catch(function (error) { });
-            }
-            else {
-                var alertStrings = { confirmButtonLabel: "Aceptar", text: "No puedes crear contactos relacionados, no cuentas con permisos suficientes", title: "Contactos Relacionados" };
-                var alertOptions = { height: 120, width: 260 };
-                Xrm.Navigation.openAlertDialog(alertStrings, alertOptions);
-            }
-        }
-        // Funcion para desbloquear BotÃ³n del desbloqueo de la ficha del cliente
-        // Autor: Rebeca GalvÃ¡n Benitez
-        // Fecha: 09 Agosto 2022
-        Santander.Contact.BloquearBtnFichaCliente = async function (PrimaryControl) {
-            try {
-                var formContext = PrimaryControl;
-                var permiso = await getPermiso("4f402b95-e75e-ed11-9561-6045bd003e8e", "habilitado") == "TRUE"
-                let tutela = JSON.parse(sessionStorage.getItem("cxm_tutela"));
-                return permiso && !tutela.tutela;
-            } catch (error) {
-                console.log(error)
-                return false;
-            }
-        }
-        // Funcion para desbloquear ficha
-        // Autor: Jesus Enrique Rojas Pedraza
-        // Fecha: 08 Agosto 2022
-        Santander.Contact.DesbloquearFichaAutorizador = async function (PrimaryControl) {
-            let formContext = PrimaryControl;
-            let idCliente = formContext.data.entity.getEntityReference().id.replace("{", "").replace("}", "");
-            let idEjecutivo = Xrm.Utility.getGlobalContext().userSettings.userId.replace("{", "").replace("}", "");
-
-            Xrm.WebApi.retrieveRecord("contact", idCliente, "?$select=_cxm_usuariopermisofichaid_value,cxm_solicitudaprobacion").then(
-                function success(result) {
-                    if (result._cxm_usuariopermisofichaid_value == null && !result.cxm_solicitudaprobacion) {
-                        Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_cat_usu_arbol_oficial", "?$select=_cxm_moduloid_value,_cxm_regionid_value,_cxm_modulo_sucursalid_value,_cxm_zonaid_value&$expand=cxm_regionid($select=cxm_codigo)&$filter=_cxm_usuarioid_value eq " + idEjecutivo).then(
-                            async function success(result) {
-                                if (result.entities[0]?._cxm_modulo_sucursalid_value != undefined) {
-                                    let sucursal = result.entities[0]?._cxm_modulo_sucursalid_value;
-                                    let director_subdirector = await Santander.Contact.ConsultarDirectorSubdirectorSucursal(sucursal);
-                                    if (director_subdirector?.value.length > 0) {
-                                        Xrm.WebApi.updateRecord("contact", idCliente, { "cxm_solicitudaprobacion": true }).then(
-                                            function success(result) {
-                                                Xrm.Navigation.openAlertDialog({
-                                                    text: "Solicitud enviada",
-                                                    title: "Desbloqueo de ficha del cliente"
-                                                });
-                                                let respondido = false;
-                                                let Esperando = setInterval(() => {
-                                                    Xrm.WebApi.retrieveRecord("contact", idCliente, "?$select=_cxm_usuariopermisofichaid_value,cxm_solicitudaprobacion").then(
-                                                        function success(result) {
-                                                            if (result.cxm_solicitudaprobacion == false && !respondido) {
-                                                                respondido = true;
-                                                                clearInterval(Esperando);
-                                                                if (result._cxm_usuariopermisofichaid_value != null) {
-                                                                    Xrm.Navigation.openAlertDialog({
-                                                                        text: "Solicitud aprobada",
-                                                                        title: "Desbloqueo de ficha del cliente"
-                                                                    }).then(
-                                                                        function (success) {
-                                                                            formContext.data.save().then(
-                                                                                function (success) {
-                                                                                    window.top.location.reload();
-                                                                                },
-                                                                                function (error) {
-                                                                                    console.log(error.message);
-                                                                                }
-                                                                            );
-                                                                        },
-                                                                        function (error) {
-                                                                            console.log(error.message);
-                                                                        }
-                                                                    );
-                                                                } else {
-                                                                    Xrm.Navigation.openAlertDialog({
-                                                                        text: "Solicitud denegada o supero el tiempo de espera",
-                                                                        title: "Desbloqueo de ficha del cliente"
-                                                                    });
-                                                                }
-                                                            }
-                                                        },
-                                                        function (error) {
-                                                            clearInterval(Esperando);
-                                                            console.log(error.message);
-                                                        }
-                                                    );
-                                                }, 5000);
-                                            },
-                                            function (error) {
-                                                alert("Error al mandar solicitud");
-                                            }
-                                        );
-                                    }
-                                    else {
-                                        alert("No existe un director o subdirector para la sucursal en la que esta el ejecutivo");
-                                    }
-                                } else {
-                                    alert("No pertenece a ninguna sucursal para realizar la solicitud");
-                                }
-                            },
-                            function (error) {
-                                console.log(error.message);
-                                alert("No se encontro sucursal del ejecutivo");
-                            }
-                        );
-                    } else {
-                        Xrm.Navigation.openAlertDialog({
-                            text: "Actualmente un ejecutivo tiene desbloqueada la ficha cliente o tiene una solicitud pendiente",
-                            title: "Desbloqueo de ficha del cliente"
-                        });
-                    }
-                },
-                function (error) {
-                    alert("Error al verificar la informacion");
-                    console.log(error.message);
-                }
-            )
-        }
-        // Funcion para mostrar BotÃ³n del desbloqueo de la ficha del cliente con biometricos
-        // Autor: Rebeca GalvÃ¡n Benitez
-        // Fecha: 09 Agosto 2022
-        Santander.Contact.BloquearBtnFichaClienteBiometricos = async function (PrimaryControl) {
-            try {
-                let formContext = PrimaryControl;
-                let permiso = await getPermiso("4f402b95-e75e-ed11-9561-6045bd003e8e", "habilitado") == "TRUE"
-                let tutela = await getPermiso("TUTELA", "lectura") === "TRUE";
-                let idCliente = formContext.data.entity.getEntityReference().id.replace("{", "").replace("}", "");
-                let consultaBiometricos = await fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_mx_det_per_kpis?$select=_cxm_contactid_value,cxm_biometrico&$filter=(_cxm_contactid_value eq " + idCliente + ")&$top=50", {
-                    method: "GET",
-                    headers: {
-                        "OData-MaxVersion": "4.0",
-                        "OData-Version": "4.0",
-                        "Content-Type": "application/json; charset=utf-8",
-                        "Accept": "application/json",
-                        "Prefer": "odata.include-annotations=*"
-                    }
-                }).then(
-                    function success(response) {
-                        return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
-                    }
-                ).then(function (responseObjects) {
-                    let responseBody = responseObjects[1];
-                    let result = responseBody;
-                    return result;
-                }).catch(function (error) {
-                    console.log(error.message);
-                });
-                let biometricos = consultaBiometricos.value.length > 0 ? consultaBiometricos.value[0].cxm_biometrico : false;
-                return false;//permiso && !tutela && biometricos;
-            } catch (error) {
-                console.log(error)
-                return false;
-            }
-        }
-        // Funcion para desbloquear ficha
-        // Autor: Jesus Enrique Rojas Pedraza
-        // Fecha: 08 Agosto 2022
-        Santander.Contact.DesbloquearFichaBiometricos = async function (PrimaryControl) {
-            Xrm.Navigation.openAlertDialog({
-                text: "Se va iniciar la verificaciÃ³n de biometricos",
-                title: "Desbloqueo de ficha del cliente"
-            }).then(
-                function success(result) {
-                    Santander.Contact.validateBiometricos();
-                },
-                function error() {
-                    // Handle errors
-                }
-            );
-
-        }
-        // Funcion para ocultar tipos de nominahabiente
-        // Autor: Sergio Daniel Orozco Albor
-        // Fecha: 
-        Santander.Contact.OcultarOpcionTipoNominahabiente = function (executionContext) {
-            var formContext = executionContext.getFormContext();
-            var cxm_nominahabiente = formContext.getAttribute(contactForm.fields.Nominahabiente).getValue();
-            if (cxm_nominahabiente == 1) {
-                formContext.getControl(contactForm.fields.TipoNominahabiente).removeOption(3);
-                formContext.getControl(contactForm.fields.TipoNominahabiente).removeOption(4);
-                formContext.getControl(contactForm.fields.TipoNominahabiente).removeOption(5);
-            }
-            else {
-                formContext.getControl(contactForm.fields.TipoNominahabiente).removeOption(1);
-                formContext.getControl(contactForm.fields.TipoNominahabiente).removeOption(2);
-            }
-        }
-        Santander.Contact.Telefono = function (executionContext) {
-            var formContext = executionContext.getFormContext();
-            var telefono = formContext.getAttribute(contactForm.fields.Telefono).getValue();
-            if (telefono != "") {
-                var pattern = /^(?!(04|05))(?=\d{10}$)\d+/;
-                if (pattern.test(telefono) == false) {
-                    formContext.getControl("mobilephone").setNotification("Ingrese un numero de telefono valido");
-                }
-                else {
-                    formContext.getControl("mobilephone").clearNotification();;
-                }
-            }
-        }
-        Santander.Contact.MayusculasNombre = function (executionContext) {
-
-            var formContext = executionContext.getFormContext();
-            var Mayus = formContext.getAttribute(contactForm.fields.Nombre).getValue();
-
-
-            if (Mayus) {
-                Mayus = Mayus.toUpperCase().replace(/((?![\w|Ã|Ã‰|Ã|Ã“|Ãš|Ã‘| ]).)*/g, '');
-                let data = "";
-                Mayus.split(" ").forEach(el => {
-                    data += el.charAt(0) + el.substr(1).toLowerCase() + " ";
-                });
-                formContext.getAttribute("firstname").setValue(data);
-            }
-        }
-        Santander.Contact.MayusculasApellidos = function (executionContext) {
-            var formContext = executionContext.getFormContext();
-            var Mayus = formContext.getAttribute(contactForm.fields.Apellidos).getValue();
-            if (Mayus) {
-                Mayus = Mayus.toUpperCase().replace(/((?![\w|Ã|Ã‰|Ã|Ã“|Ãš|Ã‘| ]).)*/g, '');
-                let data = "";
-                Mayus.split(" ").forEach(el => {
-                    data += el.charAt(0) + el.substr(1).toLowerCase() + " ";
-                });
-                formContext.getAttribute("lastname").setValue(data);
-            }
-
-        }
-        Santander.Contact.restringirDatos = async function (executionContext) {
-            var formContext = executionContext.getFormContext();
-            let idContact = Xrm.Utility.getPageContext().input;
-            let usuario = Xrm.Utility.getGlobalContext().userSettings.userId.replaceAll("{", "").replaceAll("}", "");
-            await Xrm.WebApi.retrieveRecord("contact", idContact.entityId, "?$select=_cxm_usuariopermisofichaid_value,_cxm_ejecutivotutelaid_value").then(
-                function success(result) {
-                    try {
-                        let ejecutivoTutela = result._cxm_ejecutivotutelaid_value.toUpperCase();
-                        let usuarioPermiso = result._cxm_usuariopermisofichaid_value;
-                        if (usuario == ejecutivoTutela)
-                            setVisibleDatosContacto(formContext, true);
-                        else {
-                            if (result._cxm_usuariopermisofichaid_value !== null) {
-                                if (usuarioPermiso.toUpperCase() == usuario)
-                                    return setVisibleDatosContacto(formContext, true);
-                            }
-                            setVisibleDatosContacto(formContext, false);
-                        }
-                    } catch (e) {
-                        setVisibleDatosContacto(formContext, false);
-                    }
-                },
-                function (error) {
-                    setVisibleDatosContacto(formContext, false);
-                    console.log(error.message);
-                }
             );
         }
-        // Funcion para ocultar la seccion de acciones comerciales para un usuario bloqueado
-        // Autor: Arturo Cesar Vilchis Serrano
-        // Fecha: 30 Noviembre 2022
-        // Modificacion: Maria Esther Aquino
-        // Fecha: 14 Marzo 2023
-        //Modificacion: -- -- --
-        Santander.Contact.OcultarAccionesComerciales = async function (executionContext) {
-            var formContext = executionContext.getFormContext();
-            var FormType = formContext.ui.getFormType();
-            if (FormType != 1) {
-                //var marcaDeClienteBloqueado = formContext.getAttribute(contactForm.fields.marcaDeClienteBloqueado).getValue();
-                var tabInfoCliente = formContext.ui.tabs.get(contactForm.tabs.infoCliente);
-                let idCliente = formContext.data.entity.getEntityReference().id.replace("{", "").replace("}", "");
-                let varMarcaDeClienteBloqueado = false;
-                const consulta = await Xrm.WebApi.retrieveMultipleRecords(contactForm.fields.marcaDeClienteBloqueado, "?$select=cxm_clientebloqueado&$filter=_cxm_contactid_value eq " + idCliente);
-                for (var i = 0; i < consulta.entities.length; i++) {
-                    varMarcaDeClienteBloqueado = consulta.entities[0].cxm_clientebloqueado;
-                }
-                if (tabInfoCliente) {
-                    var secAccionesComerciales = formContext.getControl(contactForm.fields.pcfAccionesComerciales);
-                    //1 - No
-                    //2 - SI
-                    if (secAccionesComerciales) {
-                        if (varMarcaDeClienteBloqueado) {
-                            secAccionesComerciales.setVisible(false);
-                        }
-                    }
-                }
-            }
-        }
-
-        function setVisibleDatosContacto(formContext, visible) {
-            //contacto personal
-            formContext.getControl("address1_telephone1").setVisible(visible);
-            formContext.getControl("emailaddress1").setVisible(visible);
-            formContext.getControl("cxm_mostraraddress1").setVisible(visible);
-            formContext.getControl("cxm_address1_calculado").setVisible(visible);
-            // contacto laboral
-            formContext.getControl("emailaddress2").setVisible(visible);
-            formContext.getControl("address1_telephone2").setVisible(visible);
-            formContext.getControl("cxm_mostraraddress2").setVisible(visible);
-            formContext.getControl("cxm_address2_calculado").setVisible(visible);
-            //contacto alternativo
-            formContext.getControl("emailaddress3").setVisible(visible);
-            formContext.getControl("address1_telephone3").setVisible(visible);
-            formContext.getControl("cxm_mostraraddress3").setVisible(visible);
-            formContext.getControl("cxm_address3_calculado").setVisible(visible);
-            //contacto notificaciones
-            formContext.getControl("cxm_emailaddress4").setVisible(visible);
-            formContext.getControl("address2_telephone1").setVisible(visible);
-            formContext.getControl("cxm_mostraraddress4").setVisible(visible);
-            formContext.getControl("cxm_address4_calculado").setVisible(visible);
-        }
-        Santander.Contact.iniciarTimer = function () {
-            resetTimer(); /* Increment the idle time counter every second */
-            var valCtrlusuariopermisoficha = formContext.getAttribute(contactForm.fields.usuariopermisoficha);
-            if (valCtrlusuariopermisoficha != null) {
-                if (valCtrlusuariopermisoficha.getValue() != null && valCtrlusuariopermisoficha.getValue()[0]["id"] == Xrm.Page.context.getUserId()) {
-                    setInterval(timerIncrement, 1000);
-                }
-            }
-        }
-        Santander.Contact.retriveVariables = function () {
-            Xrm.WebApi.retrieveMultipleRecords("environmentvariabledefinition", "?$select=environmentvariabledefinitionid,displayname&$expand=environmentvariabledefinition_environmentvariablevalue($select=value)&$filter=schemaname eq 'cxm_tmpdesbloqueoficha'").then(
-                function success(result) {
-                    tiempodesbloqueoficha = (parseFloat(result.entities[0].environmentvariabledefinition_environmentvariablevalue[0].value) * 60 * 1000);
-                },
-                function (error) {
-                    console.log(error.message);
-                    alert("Error al cargar las variables del entorno");
-                });
-            Xrm.WebApi.retrieveMultipleRecords("environmentvariabledefinition", "?$select=environmentvariabledefinitionid,displayname&$expand=environmentvariabledefinition_environmentvariablevalue($select=value)&$filter=schemaname eq 'cxm_cantidadmensjespera'").then(
-                function success(result) {
-                    cantidadmensajesespera = parseInt(result.entities[0].environmentvariabledefinition_environmentvariablevalue[0].value);
-                },
-                function (error) {
-                    console.log(error.message);
-                    alert("Error al cargar las variables del entorno");
-                });
-        }
-        function resetTimer() {
-            currSeconds = 0;
-        }
-        function cleanUserAndRefresh() {
-            formContext.getAttribute(contactForm.fields.usuariopermisoficha).setValue(null);
-            formContext.data.save().then(
-                function (success) {
-                    window.top.location.reload();
-                },
-                function (error) {
-                    console.log(error.message);
-                });
-        }
-        function timerIncrement() {
-            currSeconds = currSeconds + 1;
-            //console.log("CurrentSeconds = " + (currSeconds * 1000) + " - tiempodesbloqueoficha = " + tiempodesbloqueoficha);
-            if ((currSeconds * 1000) == tiempodesbloqueoficha) {
-                if (auxcantidadmensajesespera <= cantidadmensajesespera) {
-                    var confirmStrings = {
-                        text: "Ha pasado el tiempo de espera.",
-                        title: "Tiempo de espera excedido",
-                        cancelButtonLabel: "Quitar",
-                        confirmButtonLabel: "Esperar"
-                    };
-                    if (auxcantidadmensajesespera == cantidadmensajesespera) {
-                        confirmStrings = {
-                            text: "La ficha quedara desbloqueada por ultima vez, despues de " + ((tiempodesbloqueoficha / 1000) / 60) + " minutos, quedara bloqueada la informaciÃ³n ",
-                            title: "Ultimo tiempo de espera",
-                            cancelButtonLabel: "Quitar",
-                            confirmButtonLabel: "Entiendo"
-                        };
-                    }
-                    var confirmOptions = {
-                        height: 200,
-                        width: 450
-                    };
-                    Xrm.Navigation.openConfirmDialog(confirmStrings, confirmOptions).then(
-                        function (success) {
-                            if (success.confirmed) {
-                                resetTimer();
-                                auxcantidadmensajesespera = auxcantidadmensajesespera + 1;
-                            }
-                            else {
-                                cleanUserAndRefresh();
-                                auxcantidadmensajesespera = 1;
-                            }
-                        });
-                } else {
-                    //limpiar la variable
-                    cleanUserAndRefresh();
-                    auxcantidadmensajesespera = 1;
-                }
-            }
-        }
-
-        // Funcion para calcular antiguedad con aÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±os y meses
-        // Autor: Jorge A. GonzÃ¡lez Valencia
-        // Fecha: 21 Diciembre 2022
-        Santander.Contact.CalculoAntiguedad = function (formContext) {
-            let altaCliente = formContext.getAttribute("cxm_altacliente").getValue();
-            //let altaCliente = Xrm.Page.getAttribute("cxm_altacliente").getValue();
-            if (altaCliente != null) {
-                const diff = Date.now() - new Date(altaCliente)
-                let seconds = Math.floor(diff / 1000),
-                    minutes = Math.floor(seconds / 60),
-                    hours = Math.floor(minutes / 60),
-                    days = Math.floor(hours / 24),
-                    months = Math.floor(days / 30),
-                    years = Math.floor(days / 365);
-
-                months %= 12;
-                const val = years + " " + "aÃ±o(s)," + " " + months + " " + "mes(es)";
-                const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-                Xrm.WebApi.updateRecord("contact", idCliente, { "cxm_tiempoingreso": val });
-            }
-        }
-
-        // FunciÃ³n para ocultar Tab de Mercado Abierto 
-        // Autor: Maria Esther Aquino y Kennya Lagunas.
-        // Fecha: 17 Agosto 2023.
-
-        Santander.Contact.OcultarTabMercadoAbierto = function (executionContext) {
-            const formContext = executionContext.getFormContext();
-            const roles = Xrm.Utility.getGlobalContext().userSettings.roles;
-            const existeRol = Object.values(roles._collection).some(el => {
-                const rol = el.name.replaceAll(" ", "").toLowerCase()
-                return ["nacional", "regional", "subdirectorsucursal"].some(tipo => tipo === rol)
+        else if (mercado == false && currentForm != "d876915b-8188-ed11-81ac-6045bd019817"
+        ) {
+            listOfAvailableForms.forEach(element => {
+                if (element.getId() == "d876915b-8188-ed11-81ac-6045bd019817") //Accion Comercial
+                    element.navigate();
             });
-            formContext.ui.tabs.get("tab_5").setVisible(true);
-            if (existeRol) {
-                formContext.ui.tabs.get("tab_5").setVisible(false);
-            }
         }
 
+    } 
 
-        // Funcion para obtener persona del formulario
-        // Autor: Jorge A. GonzÃ¡lez Valencia
-        // Fecha: 22 Diciembre 2022
-        Santander.Contact.ObtenerPersona = function (executionContext) {
-            var formContext = executionContext.getFormContext();
-            var persona = formContext.data.entity.getEntityReference();
-            var lookupValue = new Array();
-            lookupValue[0] = new Object();
-            lookupValue[0].id = persona.id;
-            lookupValue[0].name = persona.name;
-            lookupValue[0].entityType = persona.entityType;
+}
+*/      
 
-            if (typeof (Storage) !== 'undefined') {
-                localStorage.setItem("Persona", JSON.stringify(lookupValue));
+       // Funcion para obtener la url de producto a accionar
+        // Autor: Rebeca Lizzet Galvan
+        // Fecha: 17 Octubre 2023
+        // Modificacion: 03 NOVIEMBRE 2023  SE COMENTA POR QUE NO VA DERIVACION POR EL MOMENTO
+        
+        Santander.Opportunity.ObtenerURLProductoACC = async function (executionContext) {  
+         
+          var formContext = executionContext.getFormContext();           
+          /*     NOTA: NO BORRAR PARA CUANDO SE IMPLEMENTE DERIVACION  03112023   */
+          var canalder = formContext.getAttribute(opportunityForm.fields.CanalDerivacion).getValue();
+          var tipoGest = formContext.getAttribute(opportunityForm.fields.TipoGestion).getValue();
+          var mercado = formContext.getAttribute(opportunityForm.fields.MercadoAbierto).getValue();
+          console.log("Canal DerivaciÃ³n " + canalder);                                       
+          console.log("Tipo GestiÃ³n " + tipoGest);
+          if(!mercado && (formContext.getAttribute(opportunityForm.fields.banderaCierre).getValue() && (tipoGest == 2 || (tipoGest == 1 && canalder == 4))))                    
+          {                       
+              let idOpportunidad = Xrm.Utility.getPageContext().input.entityId.replace("{", "").replace("}", "");
+              console.log("ID Oportunidad " + idOpportunidad);
+              
+              const responseProduct = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/opportunities?$select=cxm_productoaccid,parentcontactid&$filter=opportunityid eq " + idOpportunidad)
+              if (!responseProduct.ok) return;
+              console.log("Producto...")            
+              const oportunidad = responseProduct.data.value[0];
+              const idproductoacc = oportunidad._cxm_productoaccid_value;            
+              const idcliente = oportunidad._parentcontactid_value;
+              console.log(idproductoacc);
+
+              if(idproductoacc != undefined)
+              {
+                  const responseUrl = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_mx_cat_acc_productoaccs?$select=cxm_urlaccionableid&$filter=cxm_mx_cat_acc_productoaccid eq " + idproductoacc)
+                  if (!responseUrl.ok) return;
+                  console.log("responseUrl...")            
+                  const urlAccionable = responseUrl.data.value[0];
+                  const idurlaccionable = urlAccionable._cxm_urlaccionableid_value;            
+                  console.log(idurlaccionable);
+
+                  if(idurlaccionable != undefined)
+                  {
+                      const response= await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_mx_cat_acc_urlaccionables?$select=cxm_identificadormodulo&$filter=cxm_mx_cat_acc_urlaccionableid eq " + idurlaccionable)
+                      if (!response.ok) return;
+                      console.log("response...")            
+                      const urlAcc = response.data.value[0];
+                      const modulo = urlAcc.cxm_identificadormodulo;            
+                      console.log(modulo);
+
+                      if(modulo != undefined)
+                      {
+                          const idEjecutivo = Xrm.Utility.getGlobalContext().userSettings.userId.replaceAll("{", "").replaceAll("}", "");
+                          console.log("idEjecutivo: "+ idEjecutivo+ " modulo: " + modulo);                                                                                                         
+                          let requestOportunidad = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_accionablemodulo", "POST", {modulos : "["+modulo+"]", clientId: idcliente});
+                          if (requestOportunidad.data.urls) {  
+                              let response = JSON.parse(requestOportunidad.data.urls); 
+                              window.open(response, '_blank')                                                                                                                                     
+                          }
+                      }
+                  }
+              }
+          }
+      }
+      // Funcion al abrir la oportunidad
+      // Autor: Rebeca Lizzet Galvan
+      // Fecha: 17 Octubre 2023
+      // Modificacion: -- -- ----      
+      Santander.Opportunity.SetBandera = function (executionContext) {
+        let formContext = executionContext.getFormContext();                                        
+        formContext.getAttribute("cxm_banderacierreaccbpf").setValue(false);
+                                          
+      }
+
+      async function requestAPI(url, method = "GET", body = null) {
+          let resReq = {};
+          let initReq = {
+            method: method,
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json; charset=utf-8",
+              "OData-MaxVersion": "4.0",
+              "OData-Version": "4.0",
+              "Prefer": "odata.include-annotations=*"
             }
+          };
+    
+          if (body) {
+            initReq.body = JSON.stringify(body);
+          }
+    
+          try {
+            const response = await window.fetch(url, initReq);
+            resReq.status = response.status;
+            resReq.ok = response.ok;
+    
+            if (response.ok) {
+              try {
+                resReq.data = await response.json();
+              } catch {
+                resReq.data = response;
+              }
+            } else {
+              resReq.error = response;
+            }
+          } catch (error) {
+            resReq.status = 400;
+            resReq.ok = false;
+            resReq.error = error;
+          }
+          return resReq;
         }
 
-        // Funcion para obtener el sessionstorage de seguridad
-        // Autor: Jesus E Rojas Pedraza
-        // Fecha: 18/Enero/2023
-        async function getRolSeguridad() {
-            let resultadoRol;
-            if (typeof (Storage) !== 'undefined') {
-                let objectLS = sessionStorage.getItem('cxm_rolseguridad');
-                if (objectLS) {
-                    return JSON.parse(objectLS);
-                }
-                const response = await Xrm.WebApi.online.execute({
-                    getMetadata: function () {
-                        return {
-                            boundParameter: null,
-                            parameterTypes: {},
-                            operationType: 0,
-                            operationName: "cxm_FuncionalidadSeguridad"
-                        };
-                    }
-                }).then(
-                    function success(response) {
-                        if (response.ok) { return response.json(); } else { return false }
-                    }
-                );
-                resultadoRol = response.Seguridad;
-                sessionStorage.setItem('cxm_rolseguridad', resultadoRol);
-                return JSON.parse(resultadoRol);
-            }
-            const res = await Xrm.WebApi.online.execute({
-                getMetadata: function () {
-                    return {
-                        boundParameter: null,
-                        parameterTypes: {},
-                        operationType: 0,
-                        operationName: "cxm_FuncionalidadSeguridad"
-                    };
-                }
-            }).then(
-                function success(response) {
-                    if (response.ok) { return response.json(); } else { return false }
-                }
-            );
-            resultadoRol = res.Seguridad;
-            return JSON.parse(resultadoRol);
-        }
-        // Funcion para obtener las funcionalidades del usuario
-        // Autor: Jesus E Rojas Pedraza
-        // Fecha: 18/Enero/2023
-        async function getFuncionalidad() {
-            const jsonSeguridad = await getRolSeguridad();
-            if (jsonSeguridad.length > 0) {
-                let rolesD = Xrm.Utility.getGlobalContext().userSettings.roles;
-                let rolesUsuario = [];
-                Object.keys(rolesD._collection).forEach((key) => {
-                    rolesUsuario.push(rolesD._collection[key])
-                });
-                if (rolesUsuario.length > 0) {
-                    let dataFuncionalidad = [];
-                    let auxRol = [];
-                    const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-                    const arbolCliente = await Xrm.WebApi.online.retrieveRecord("contact", idCliente, "?$select=_cxm_arbol_claveid_value,_cxm_usuariopermisofichaid_value&$expand=cxm_arbol_claveid($select=_cxm_moduloid_value,_cxm_regionid_value,_cxm_modulo_sucursalid_value,_cxm_usuarioid_value,_cxm_zonaid_value;$expand=cxm_regionid($select=cxm_codigo))");
-                    const idEjecutivo = Xrm.Utility.getGlobalContext().userSettings.userId.replaceAll("{", "").replaceAll("}", "");
-                    const arbolEjecutivo = await Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_cat_usu_arbol_oficial", "?$select=_cxm_moduloid_value,_cxm_regionid_value,_cxm_modulo_sucursalid_value,_cxm_zonaid_value&$expand=cxm_regionid($select=cxm_codigo)&$filter=_cxm_usuarioid_value eq " + idEjecutivo);
-                    const comparacion = comparasionArboles(arbolCliente, arbolEjecutivo, rolesUsuario);
-                    rolesUsuario.forEach(rol => {
-                        auxRol = jsonSeguridad.filter(register =>
-                            register.id.toUpperCase() === rol.id.toUpperCase() &&
-                            (register.sucursal === "3" || register.sucursal === comparacion.sucursal) &&
-                            (register.zona === "3" || register.zona === comparacion.zona) &&
-                            (register.region === "3" || register.region === comparacion.region)
-                        );
-                        if (auxRol.length > 0) {
-                            auxRol[0].funcionalidad.forEach(func => {
-                                dataFuncionalidad.push(func);
-                            });
-                        }
-                    });
+       
+  // Funcion para obtener el valor actividad en formulario BPF
+  // Autor: Luis Bermudez
+  // Fecha: 17 Octubre 2023
+  // Modificacion: -- -- ----
+  Santander.Opportunity.getActividadAbierta = async function (executionContext) {
+    console.log("entra a funcion");
+    let formContext = executionContext.getFormContext();
+    let medio = formContext.getAttribute(contactForm.fields.actividadLlamada)?.getSelectedOption() ?? null;
+    const dataEje = Xrm.Utility.getGlobalContext().userSettings
+    const IDEjecutivo = dataEje.userId.substring(1, dataEje.userId.length - 1);
+    const actividadLlamadaFetchXML = `
+        <fetch>
+         <entity name="phonecall" >
+            <attribute name="subject" />
+            <attribute name="activityid" />
+            <attribute name="statecode" />
+            <filter type="and" >
+                <condition attribute="statecode" operator="eq" value="0" />
+                <condition attribute="createdby" operator="eq" value="`+ IDEjecutivo + `" />
+                <condition attribute="createdon" operator="today" />
+            </filter>
+            <link-entity name="systemuser" from="systemuserid" to="createdby" />
+         </entity>
+        </fetch>`;
 
-                    return validateTutela(dataFuncionalidad, arbolCliente);//return dataFuncionalidad;
-                }
-            }
-            return [];
+    Xrm.WebApi.retrieveMultipleRecords("phonecall", "?fetchXml=" + actividadLlamadaFetchXML).then(
+      function success(result) {
+        let setPhone = new Array();
+        setPhone[0] = new Object();
+        setPhone[0].id = result.entities[0]["activityid"]
+        setPhone[0].name = result.entities[0]["subject"]
+        setPhone[0].entityType = "phonecall"
+        if (medio.text == "Llamada" || medio.text == "SMS") {
+          formContext.getAttribute(contactForm.fields.actividadLlamada).setValue(setPhone);
+          console.log("Imprime GUID phonecall: ", setPhone)
         }
-        // Funcion para validar ejecutivo de tutela
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 13/Febrero/2023
-        function validateTutela(dataFuncionalidad, arbolCliente) {
-            if (arbolCliente !== undefined) {
-                const dataCliente = arbolCliente;
-                const idEjecutivo = (Xrm.Utility.getGlobalContext().userSettings.userId).replaceAll("{", "").replaceAll("}", "") ?? "3e759fa4-38bb-ec11-983f-002248098f8d";
-                if (dataCliente.cxm_arbol_claveid._cxm_usuarioid_value?.toUpperCase() === idEjecutivo ||
-                    dataCliente._cxm_usuariopermisofichaid_value?.toUpperCase() === idEjecutivo) {
-                    dataFuncionalidad.push({ id: "TUTELA", descripcion: "", tipo: "LECTURA", value: "TRUE" });
-                }
-            }
-            return dataFuncionalidad;
-        }
-        // Funcion para comparar los arboles de oficiales de cliente y  usuario
-        // Autor: Jesus E Rojas Pedraza
-        // Fecha: 18/Enero/2023
-        function comparasionArboles(arbolCliente, arbolEjecutivo, roles) {
-            // misma 1 // diferente 2 // N/A 3 // error 4
-            let comparacion = { region: "4", sucursal: "4", zona: "4" };
-            const dataCliente = arbolCliente;
-            const dataEjecutivo = arbolEjecutivo;
-            const auxRegional = roles.filter(rol => rol.name.toUpperCase() === "REGIONAL");
-            if (dataCliente._cxm_arbol_claveid_value && dataEjecutivo.entities.length > 0) {
-                comparacion.region = comparacionRegion(dataCliente, dataEjecutivo);
-                if (auxRegional.length > 0) {
-                    comparacion.region =
-                        (dataCliente.cxm_arbol_claveid.cxm_regionid.cxm_codigo === "1000" && dataEjecutivo.entities[0].cxm_regionid.cxm_codigo === "2000") ||
-                            dataCliente.cxm_arbol_claveid.cxm_regionid.cxm_codigo === "2000" && dataEjecutivo.entities[0].cxm_regionid.cxm_codigo === "1000" ? "1" : comparacion.region
-                }
-                comparacion.zona = comparacionZona(dataCliente, dataEjecutivo)
-                comparacion.sucursal = comparacionSucursal(dataCliente, dataEjecutivo);
-            }
-            return comparacion;
-        }
-        // ComparaciÃ³n del GUID para Region
-        // Autor: Jesus E Rojas Pedraza
-        // Fecha: 18/Enero/2023
-        function comparacionRegion(dataCliente, dataEjecutivo) {
-            let comparacionAux = "4"
-            comparacionAux =
-                dataCliente.cxm_arbol_claveid._cxm_regionid_value &&
-                    dataCliente.cxm_arbol_claveid._cxm_regionid_value === dataEjecutivo.entities[0]._cxm_regionid_value ? "1" : comparacionAux;
-            comparacionAux =
-                dataCliente.cxm_arbol_claveid._cxm_regionid_value && dataEjecutivo.entities[0]._cxm_regionid_value &&
-                    dataCliente.cxm_arbol_claveid._cxm_regionid_value !== dataEjecutivo.entities[0]._cxm_regionid_value ? "2" : comparacionAux;
-            return comparacionAux;
-        }
-        // ComparaciÃ³n del GUID para Zona
-        // Autor: Jesus E Rojas Pedraza
-        // Fecha: 18/Enero/2023
-        function comparacionZona(dataCliente, dataEjecutivo) {
-            let comparacionAux = "4"
-            comparacionAux =
-                dataCliente.cxm_arbol_claveid._cxm_zonaid_value &&
-                    dataCliente.cxm_arbol_claveid._cxm_zonaid_value === dataEjecutivo.entities[0]._cxm_zonaid_value ? "1" : comparacionAux
-            comparacionAux = dataCliente.cxm_arbol_claveid._cxm_zonaid_value && dataEjecutivo.entities[0]._cxm_zonaid_value &&
-                dataCliente.cxm_arbol_claveid._cxm_zonaid_value !== dataEjecutivo.entities[0]._cxm_zonaid_value ? "2" : comparacionAux;
-            return comparacionAux;
-        }
-        // ComparaciÃ³n del GUID para Sucursal
-        // Autor: Jesus E Rojas Pedraza
-        // Fecha: 18/Enero/2023
-        function comparacionSucursal(dataCliente, dataEjecutivo) {
-            let comparacionAux = "4"
-            comparacionAux =
-                dataCliente.cxm_arbol_claveid._cxm_modulo_sucursalid_value &&
-                    dataCliente.cxm_arbol_claveid._cxm_modulo_sucursalid_value === dataEjecutivo.entities[0]._cxm_modulo_sucursalid_value ? "1" : comparacionAux
-            comparacionAux = dataCliente.cxm_arbol_claveid._cxm_modulo_sucursalid_value && dataEjecutivo.entities[0]._cxm_modulo_sucursalid_value &&
-                dataCliente.cxm_arbol_claveid._cxm_modulo_sucursalid_value !== dataEjecutivo.entities[0]._cxm_modulo_sucursalid_value ? "2" : comparacionAux;
-            return comparacionAux;
-        }
-        // Funcion para obtener el permiso que se necesita de acuerdo al GUID de la funcionalidad y el tipo
-        // Autor: Jesus E Rojas Pedraza
-        // Fecha: 18/Enero/2023
-        async function getPermiso(GUID, tipo) {
-            const Funcionalidades = await getFuncionalidad();
-            const aux = Funcionalidades.filter(e => e.id.toUpperCase() === GUID.toUpperCase() && e.tipo.toUpperCase() === tipo.toUpperCase());
-            if (aux.length > 0)
-                return aux[0].value.toUpperCase();
-            return ""
-        }
-        // Funcion para validar permisos de Contactos relacionados
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 18/Enero/2023
-        Santander.Contact.VerContactosRelacionados = async function (PrimaryControl) {
-            try {
-                let formContext = PrimaryControl;
-                let permiso = await getPermiso("9465e4e7-cfab-ed11-aad0-6045bd038846", "lectura") == "TRUE";
-                let auxTutela = await getPermiso("TUTELA", "lectura") === "TRUE";
-                let tab = formContext.ui.tabs.get(contactForm.tabs.contactosRelacionados);
-                if (permiso || auxTutela) {
-                    tab.sections.get(contactForm.sections.relacionadosTutela).setVisible(true);
-                    tab.sections.get(contactForm.sections.relacionadosNoTutela).setVisible(false);
-                }
-                else {
-                    tab.sections.get(contactForm.sections.relacionadosTutela).setVisible(false);
-                    tab.sections.get(contactForm.sections.relacionadosNoTutela).setVisible(true);
-                }
-                formContext.ui.tabs.get(contactForm.tabs.infoCliente).setFocus();
-            } catch (error) {
-                console.log("Error en la funcion VerContactosRelacionados: " + error);
-                return false;
-            }
-        }
-        // Funcion para validar permisos de Actividad Laboral
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 18/Enero/2023
-        Santander.Contact.VerActividadLaboral = async function (PrimaryControl) {
-            try {
-                let formContext = PrimaryControl;
-                let permiso = await getPermiso("758e00ee-cfab-ed11-aad0-6045bd038846", "lectura") == "TRUE";
-                let auxTutela = await getPermiso("TUTELA", "lectura") === "TRUE";
-                if (permiso || auxTutela) {
-                    formContext.ui.tabs.get(contactForm.tabs.actividadLaboral).setVisible(true);
-                }
-                else {
-                    formContext.ui.tabs.get(contactForm.tabs.actividadLaboral).setVisible(false);
-                }
-            } catch (error) {
-                console.log("Error en la funcion VerActividadLaboral: " + error);
-                return false;
-            }
-        }
-        // FunciÃ³n para quitar permiso tutela una vez sea validado
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 27/Febrero/2023
-        Santander.Contact.QuitarPermisoTutela = function (idCliente) {
-            let req = new XMLHttpRequest();
-            req.open("POST", Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/contacts(" + idCliente + ")/Microsoft.Dynamics.CRM.cxm_ClienteQuitarTutela", true);
-            req.setRequestHeader("OData-MaxVersion", "4.0");
-            req.setRequestHeader("OData-Version", "4.0");
-            req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
-            req.setRequestHeader("Accept", "application/json");
-            req.onreadystatechange = function () {
-                if (this.readyState === 4) {
-                    req.onreadystatechange = null;
-                    if (this.status === 200 || this.status === 204) {
-                        console.log("Success");
-                    } else {
-                        console.log(this.responseText);
-                    }
-                }
-            };
-            req.send();
-        }
-        // FunciÃ³n para comprobar que existen director o subdirector de la sucursal
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 07/Marzo/2023
-        Santander.Contact.ConsultarDirectorSubdirectorSucursal = async function (idSucursal) {
-            const originalFetchXML = `<fetch>
-      <entity name="cxm_mx_cat_usu_arbol_oficial">
-        <attribute name="cxm_modulo_sucursalid" />
-        <attribute name="cxm_usuarioid" />
-        <attribute name="cxm_tipooficialid" />
-        <filter type="and">
-          <condition attribute="cxm_modulo_sucursalid" operator="eq" value="`+ idSucursal + `" uitype="cxm_mx_cat_usu_modulo" />
+      },
+      function (error) {
+        console.log(error.message);
+      }
+    );
+
+    const actividadCitaFetchXML = `
+        <fetch>
+        <entity name="appointment" >
+            <attribute name="subject" />
+            <attribute name="activityid" />
+            <attribute name="statecode" />
+            <filter type="and" >
+            <condition attribute="statecode" operator="eq" value="0" />
+            <condition attribute="createdby" operator="eq" value="`+ IDEjecutivo + `" />
+            <condition attribute="createdon" operator="today" />
         </filter>
-        <link-entity name="systemuser" from="systemuserid" to="cxm_usuarioid" />
-        <link-entity name="cxm_mx_cat_usu_tip_oficial" from="cxm_mx_cat_usu_tip_oficialid" to="cxm_tipooficialid">
-          <filter>
-            <condition attribute="cxm_codigo" operator="in">
-              <value>1</value>
-              <value>12</value>
-            </condition>
-          </filter>
-        </link-entity>
-      </entity>
-    </fetch>`;
-            let escapedFetchXML = encodeURIComponent(originalFetchXML);
+        </entity>
+        </fetch>`;
 
-            return await fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_mx_cat_usu_arbol_oficials?fetchXml=" + escapedFetchXML, {
-                method: "GET",
-                headers: {
-                    "OData-MaxVersion": "4.0",
-                    "OData-Version": "4.0",
-                    "Content-Type": "application/json; charset=utf-8",
-                    "Accept": "application/json",
-                    "Prefer": "odata.include-annotations=*"
-                }
-            }).then(
-                function success(response) {
-                    return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
-                }
-            ).then(function (responseObjects) {
-                let responseBody = responseObjects[1];
-                let result = responseBody;
-                return result;
-            }).catch(function (error) {
-                console.log(error.message);
-            });
+    Xrm.WebApi.retrieveMultipleRecords("appointment", "?fetchXml=" + actividadCitaFetchXML).then(
+      function success(result) {
+        let setAppo = new Array();
+        setAppo[0] = new Object();
+        setAppo[0].id = result.entities[0]["activityid"]
+        setAppo[0].name = result.entities[0]["subject"]
+        setAppo[0].entityType = "appointment"
+        if (medio.text == "Visita" || medio.text == "Cita") {
+          formContext.getAttribute(contactForm.fields.actividadCita).setValue(setAppo);
+          console.log("Imprime GUID appointment: ", setAppo)
         }
-        // FunciÃ³n para comprobar la sesion de tutela
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 22/Marzo/2023
-        Santander.Contact.SessionTutela = async function () {
-            if (typeof (Storage) !== 'undefined') {
-                let tutela = await getPermiso("TUTELA", "lectura") === "TRUE";
-                sessionStorage.setItem('cxm_tutela', JSON.stringify({ tutela }));
-            }
-        }
-        // FunciÃ³n para comprobar la vista del botÃ³n de bloqueo del cliente
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 22/Marzo/2023
-        Santander.Contact.BtnBloquearCliente = async function () {
-            try {
-                const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-                let clienteBloqueado = await Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_det_per_kpi", "?$select=cxm_clientebloqueado&$filter=_cxm_contactid_value eq " + idCliente);
-                return !clienteBloqueado?.entities[0]?.cxm_clientebloqueado;
-            } catch (error) {
-                console.log(error)
-                return false;
-            }
-        }
-        // FunciÃ³n para bloquear el cliente
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 22/Marzo/2023
-        Santander.Contact.BloquearCliente = function (PrimaryControl) {
-            formContext = PrimaryControl;
-            let _recordId = formContext.data.entity.getId();
-            _recordId = _recordId.replace("{", "").replace("}", "");
-            let _entityName = formContext.data.entity.getEntityName();
+      },
+      function (error) {
+        console.log(error.message);
+      }
+    );
+  }
+    
 
-            let pageInput = {
-                pageType: "custom",
-                name: contactForm.custompage.bloqueoCliente,
-                entityName: _entityName,
-                recordId: _recordId
-            };
-            let navigationOptions = {
-                target: 2,
-                height: { value: 1000, unit: "px" },
-                width: { value: 500, unit: "px" },
-                position: 1,
-                title: "Bloqueo de cliente"
-            };
-            Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(async function success(result) {
-                const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-                let clienteBloqueado = await Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_det_per_kpi", "?$select=cxm_clientebloqueado&$filter=_cxm_contactid_value eq " + idCliente);
-                let recargar = clienteBloqueado?.entities[0]?.cxm_clientebloqueado;
-                if (recargar) {
-                    Santander.Contact.GuardarTimeline(PrimaryControl, " bloqueÃ³ al cliente ", 3);
-                    window.top.location.reload();
-                }
-                // Handle dialog closed
-            },
-                function error() {
-                    // Handle errors
-                }).catch(function (error) { });
-        }
-        // FunciÃ³n para comprobar la vista del botÃ³n de bloqueo del cliente
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 19/Abril/2023
-        Santander.Contact.BtnDesbloquearCliente = async function () {
-            try {
-                const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-                let clienteBloqueado = await Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_det_per_kpi", "?$select=cxm_clientebloqueado&$filter=_cxm_contactid_value eq " + idCliente);
-                let permiso = await getPermiso("3e2c1295-76de-ed11-a7c7-6045bd0388ff", "habilitado") === "TRUE";
-                return clienteBloqueado?.entities[0]?.cxm_clientebloqueado && permiso;
-            } catch (error) {
-                console.log(error)
-                return false;
-            }
-        }
-        // FunciÃ³n para bloquear el cliente
-        // Autor: Heber Z Hernandez Martinez
-        // Fecha: 19/Abril/2023
-        Santander.Contact.DesbloquearCliente = function (PrimaryControl) {
-            formContext = PrimaryControl;
-            let _recordId = formContext.data.entity.getId();
-            _recordId = _recordId.replace("{", "").replace("}", "");
-            let _entityName = formContext.data.entity.getEntityName();
-
-            let pageInput = {
-                pageType: "custom",
-                name: contactForm.custompage.bloqueoCliente,
-                entityName: _entityName,
-                recordId: _recordId,
-            };
-            let navigationOptions = {
-                target: 2,
-                height: { value: 1000, unit: "px" },
-                width: { value: 500, unit: "px" },
-                position: 1,
-                title: "Desbloqueo de cliente"
-            };
-            Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(async function success(result) {
-                const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-                let clienteBloqueado = await Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_det_per_kpi", "?$select=cxm_clientebloqueado&$filter=_cxm_contactid_value eq " + idCliente);
-                let recargar = !clienteBloqueado?.entities[0]?.cxm_clientebloqueado;
-                if (recargar) {
-                    Santander.Contact.GuardarTimeline(PrimaryControl, " desbloqueÃ³ al cliente ", 4);
-                    window.top.location.reload();
-                }
-                // Handle dialog closed
-            },
-                function error() {
-                    // Handle errors
-                }).catch(function (error) { });
-        }
-        Santander.Contact.GuardarTimeline = async function (PrimaryControl, texto, tipoOption) {
-            const formContext = PrimaryControl;
-            const dataEje = Xrm.Utility.getGlobalContext().userSettings;
-            const usuarioid = dataEje.userId.substring(1, dataEje.userId.length - 1);
-            let clienteid = formContext.data.entity.getId();
-            let nombreCliente = formContext.getAttribute("fullname").getValue();
-            let buc = formContext.getAttribute("cxm_bucid").getValue();
-
-            // Parameters
-            fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_AuditoriaFichaCliente", {
-                method: "POST",
-                headers: {
-                    "OData-MaxVersion": "4.0",
-                    "OData-Version": "4.0",
-                    "Content-Type": "application/json; charset=utf-8",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({
-                    nombreCliente,
-                    usuarioid,
-                    clienteid,
-                    texto,
-                    buc,
-                    tipoOption
-                })
-            }).then(
-                function success(response) {
-                    return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
-                }
-            ).then(function (responseObjects) {
-                let response = responseObjects[0];
-                let responseBody = responseObjects[1];
-                let result = responseBody;
-                let status = result["status"]; // Edm.String
-                if (status.Id) {
-                    // Refrescar timeline
-                    //formContext.getControl(taskForm.fields.timeline).refresh();
-                }
-            }).catch(function (error) {
-                console.log(error.message);
-            })
-        }
-
-        async function requestAPI(url, method = "GET", body = null) {
-            let resReq = {};
-            let initReq = {
-                method: method,
-                headers: {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json; charset=utf-8",
-                    "OData-MaxVersion": "4.0",
-                    "OData-Version": "4.0",
-                    "Prefer": "odata.include-annotations=*"
-                }
-            };
-
-            if (body) {
-                initReq.body = JSON.stringify(body);
-            }
-
-            try {
-                const response = await window.fetch(url, initReq);
-                resReq.status = response.status;
-                resReq.ok = response.ok;
-
-                if (response.ok) {
-                    try {
-                        resReq.data = await response.json();
-                    } catch {
-                        resReq.data = response;
-                    }
-                } else {
-                    resReq.error = response;
-                }
-            } catch (error) {
-                resReq.status = 400;
-                resReq.ok = false;
-                resReq.error = error;
-            }
-            return resReq;
-        }
-
-        function getClientId() {
-            let id = Xrm.Utility.getPageContext().input.entityId
-            return id.substring(1, id.length - 1);
-        }
-
-        async function getBuc() {
-            const clientId = getClientId();
-            const reqBuc = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/contacts(" + clientId + ")?$select=cxm_bucid");
-            return reqBuc.ok ? reqBuc.data.cxm_bucid : "00000000";
-        }
-
-        Santander.Contact.ApiBiometricos = async function (formContext) {
-            formContext.getAttribute(contactForm.fields.pcfMarcas).setValue("");
-            const urlClient = Xrm.Utility.getGlobalContext().getClientUrl();
-
-            const reqIndicadores = await requestAPI(urlClient + "/api/data/v9.2/cxm_mx_det_per_kpis?$select=cxm_mx_det_per_kpiid,cxm_biometrico&$filter=_cxm_contactid_value eq " + getClientId())
-            if (!reqIndicadores.ok) return;
-
-            const indicadores = reqIndicadores.data.value[0];
-            //if(indicadores.cxm_biometrico) return;
-
-            const reqVariables = await requestAPI(urlClient + "/api/data/v9.2/environmentvariablevalues?$select=value&$expand=EnvironmentVariableDefinitionId($select=schemaname)&$filter=EnvironmentVariableDefinitionId/schemaname eq 'cxm_clientid_serenity'&$orderby=schemaname asc");
-            if (!reqVariables.ok) return;
-
-            const clientIdSerenity = reqVariables.data.value[0].value;
-            const reqSerenity = await requestAPI("https://biocheck-lightweight-gateway-mxbiocheck-dev.apps.str01.mex.dev.mx1.paas.cloudcenter.corp/oauth/token?client_id=" + clientIdSerenity);
-            if (!reqSerenity.ok) return;
-
-            const tokenSerenity = reqSerenity.data.access_token;
-            const buc = await getBuc();
-            //API Token Opaco
-            //API enrolamiento
-            const enrolamiento = !indicadores.cxm_biometrico;
-            //Update indicador
-            await requestAPI(urlClient + "/api/data/v9.2/cxm_mx_det_per_kpis(" + indicadores.cxm_mx_det_per_kpiid + ")", "PATCH", { cxm_biometrico: enrolamiento });
-            formContext.getAttribute(contactForm.fields.pcfMarcas).setValue("data");
-        }
-        Santander.Contact.DesbloquearFicha = async function (PrimaryControl) {
-            formContext = PrimaryControl;
-            let _recordId = formContext.data.entity.getId();
-            _recordId = _recordId.replace("{", "").replace("}", "");
-            let rolesD = Xrm.Utility.getGlobalContext().userSettings.roles;
-            let _rolDirector = rolesD._collection['6472ec60-5890-ed11-aad0-00224808659b'] ? "true" : "false";
-
-            let pageInput = {
-                pageType: "custom",
-                name: contactForm.custompage.desbloqueoFicha,
-                entityName: _rolDirector,
-                recordId: _recordId,
-            };
-            let navigationOptions = {
-                target: 2,
-                height: { value: 275, unit: "px" },
-                width: { value: 500, unit: "px" },
-                position: 1,
-                title: "Desbloqueo de ficha del cliente"
-            };
-            Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(async function success(result) {
-                const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-                let opcionDesbloqueo = await Xrm.WebApi.online.retrieveRecord("contact", idCliente, "?$select=cxm_tipodesbloqueoficha");
-                await Xrm.WebApi.updateRecord("contact", idCliente, { "cxm_tipodesbloqueoficha": null });
-                if (opcionDesbloqueo.cxm_tipodesbloqueoficha == 1) {
-                    Santander.Contact.DesbloquearFichaAutorizador(formContext);
-                }
-                if (opcionDesbloqueo.cxm_tipodesbloqueoficha == 2) {
-                    Santander.Contact.DesbloquearFichaBiometricos(formContext);
-                }
-
-            },
-                function error() {
-
-                }).catch(function (error) { });
-        }
-        // FunciÃ³n para ejecutar de manera sencilla los fetch de Auth
-        // Autor: Jose Antonio Trejo
-        // Fecha: 03/08/2023
-        async function requestApiAuth(url, method = "GET", headers = null, body = null) {
-            let resReq = {};
-            let initReq = {
-                method: method,
-                headers: {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json; charset=utf-8",
-                    "OData-MaxVersion": "4.0",
-                    "OData-Version": "4.0",
-                    "Prefer": "odata.include-annotations=*"
-                }
-            };
-
-            if (body) {
-                initReq.body = typeof body === "string" ? body : JSON.stringify(body);
-            }
-            if (headers) {
-                //Headers personalizados
-                initReq.headers = headers
-            }
-
-            try {
-                const response = await window.fetch(url, initReq);
-                resReq.status = response.status;
-                resReq.ok = response.ok;
-                if (response.ok) {
-                    try {
-                        resReq.data = await response.json();
-                    } catch {
-                        resReq.data = response;
-                    }
-                } else {
-                    try {
-                        resReq.error = await response.json();
-                    } catch {
-                        resReq.error = response;
-                    }
-                }
-            } catch (error) {
-                resReq.status = 400;
-                resReq.ok = false;
-                resReq.error = error;
-            }
-            return resReq;
-        }
-        // FunciÃ³n para ejecutar en el Onload la autentificacion
-        // Autor: Jose Antonio Trejo
-        // Fecha: 03/08/2023
-        Santander.Contact.setAuthConfig = async function () {
-            sessionStorage.setItem("codeAuth", "waiting");
-            sessionStorage.setItem("channelAcces", "waiting");
-            //Seccion Creacion Token Azure ID
-            await Santander.Contact.getAuthAzure();
-            //Creacion Sesion
-            await Santander.Contact.getSesionDist();
-        }
-        // FunciÃ³n para obtener la autentificacion de Azure
-        // Autor: Jose Antonio Trejo
-        // Fecha: 03/08/2023
-        Santander.Contact.getAuthAzure = async function () {
-            const idUser = Xrm.Utility.getGlobalContext().userSettings.userId;
-            const reqEjData = await fetch("/api/data/v9.2/systemusers(" + idUser.substring(1, idUser.length - 1) + ")?$select=internalemailaddress,cxm_exptoken");
-            const ejecutivoData = await reqEjData.json();
-            const envApis = await getENV();
-            const clientId = envApis.clientIdAuth;
-            const tenantID = envApis.tenantAuth;
-            const urlClient = Xrm.Utility.getGlobalContext().getClientUrl();
-            if (!ejecutivoData.cxm_exptoken || (ejecutivoData.cxm_exptoken && (new Date().getTime() - new Date(ejecutivoData.cxm_exptoken).getTime() > 0))) {
-                const iframe = document.createElement("iframe");
-                iframe.style.display = "none";
-                const srcLogin = `https://login.microsoftonline.com/${tenantID}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&prompt=none&scope=https://admin.services.crm.dynamics.com/user_impersonation`
-                iframe.src = srcLogin;
-                document.body.appendChild(iframe);
-                iframe.addEventListener('load', async function () {
-                    const search = iframe.contentWindow.location.search;
-                    const codeAuth = new URLSearchParams(search).get("code");
-                    if (codeAuth) {
-                        const bodyAuth = {
-                            code: codeAuth,
-                            authApi: "code"
-                        }
-                        const reqSecretChannel = await requestApiAuth(urlClient + "/api/data/v9.2/cxm_APIsSTD", "POST", null, bodyAuth);
-                        if (reqSecretChannel.ok) {
-                            sessionStorage.setItem("codeAuth", "created");
-                        }
-                        else {
-                            sessionStorage.setItem("codeAuth", "error");
-                            sessionStorage.setItem("errorADDetail", reqSecretChannel.error.error.message);
-                        }
-                    }
-                    else {
-                        sessionStorage.setItem("codeAuth", "error");
-                        sessionStorage.setItem("errorADDetail", "Error en el Azure");
-                    }
-                });
-            }
-            else if (ejecutivoData.cxm_exptoken) {
-                sessionStorage.setItem("codeAuth", "created");
-            }
-        }
-        // FunciÃ³n para obtener la sesion distribuida desde la vapi
-        // Autor: Jose Antonio Trejo
-        // Fecha: 03/08/2023
-        Santander.Contact.getSesionDist = async function () {
-            console.log("Obteniendo Sesion Distribuida " + new Date().toLocaleTimeString())
-            clearInterval(pointerGSD);
-            const urlClient = Xrm.Utility.getGlobalContext().getClientUrl();
-            const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-            const clienteData = await Xrm.WebApi.online.retrieveRecord("contact", idCliente, "?$select=cxm_bucid");
-            const envApis = await getENV();
-            const clientIdSTD = envApis.clientIdTokenApi;
-            const urlChannelA = envApis.urlChannelA;
-            //Seccion Creacion primera sesion distribuida
-            const bodyAuth = {
-                authApi: "channel"
-            }
-            const reqSecretChannel = await requestApiAuth(urlClient + "/api/data/v9.2/cxm_APIsSTD", "POST", null, bodyAuth);
-            if (!reqSecretChannel.ok) {
-                console.log("No se puede obtener al token para la Sesion distribuida. ");
-                sessionStorage.setItem("channelAcces", "error");
-                return 0;
-            }
-            const channelData = JSON.parse(reqSecretChannel.data.dataOut);
-            const headersChannel = {
-                "Content-Type": "application/json",
-                "accept": "application/json",
-                "x-ibm-client-id": clientIdSTD,
-                "Authorization": channelData.access_token
-            }
-            const bodyChannel = {
-                "customerId": clienteData.cxm_bucid.padStart(8, "0"),
-                "channels": [
-                    {
-                        "channel": {
-                            "code": "SC"
-                        }
-                    }
-                ],
-                "accessTypeCode": "OTP"
-            }
-            const reqChannel = await requestApiAuth(urlChannelA, "POST", headersChannel, bodyChannel);
-            if (reqChannel.ok) {
-                const channelAcces = reqChannel.data.channelAccessAgreementId;
-                const exp = reqChannel.data.validityPeriod.expiresIn;
-                sessionStorage.setItem("channelAcces", channelAcces);
-                var record = {
-                    cxm_sesiondistribuida: channelAcces
-                };
-                const res = await Xrm.WebApi.updateRecord("contact", idCliente, record);
-                pointerGSD = setInterval(Santander.Contact.getSesionDist, exp * 1000);
-                return exp;
-            }
-            else {
-                let contErr = 0;
-                try {
-                    contErr = reqChannel.error.errors?.findIndex(error => error.code === "ASC001");
-                }
-                catch (e) {
-                    contErr = -1;
-                }
-                if ((!contErr && contErr !== 0) || contErr < 0) {
-                    console.log("Errores desconocidos. " + JSON.stringify(reqChannel.error));
-                    sessionStorage.setItem("channelAcces", "error");
-                    return 0;
-                }
-                Santander.Contact.getSesionDistCRM(true, envApis);
-                return -1;
-            }
-        }
-        // FunciÃ³n para obtener la sesion distribuida desde CRM
-        // Autor: Jose Antonio Trejo
-        // Fecha: 03/08/2023
-        Santander.Contact.getSesionDistCRM = async function (primera = false, envApis) {
-            console.log("SesiÃ³n Distribuida CRM " + new Date().toLocaleTimeString());
-            clearInterval(pointerGSDC);
-            const channelViejo = sessionStorage.getItem("channelAcces");
-            const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
-            const clienteData = await Xrm.WebApi.online.retrieveRecord("contact", idCliente, "?$select=cxm_sesiondistribuida");
-            if (primera || channelViejo !== clienteData.cxm_sesiondistribuida) {
-                console.log("Actualizar sesion distribuida");
-                const clientIdSTD = envApis.clientIdTokenApi;
-                const urlChannelA = envApis.urlChannelA;
-                //Seccion Creacion primera sesion distribuida
-                const bodyAuth = {
-                    buc: "",
-                    code: "",
-                    authApi: "channel",
-                    channelInfo: "",
-                    scope: "channel-access-management_1.0.0"
-                }
-                const reqSecretChannel = await requestApiAuth("/api/data/v9.2/cxm_APIsSTD", "POST", null, bodyAuth);
-                const channelData = JSON.parse(reqSecretChannel.data.dataOut);
-                const headersChannel = {
-                    "Content-Type": "application/json",
-                    "accept": "application/json",
-                    "x-ibm-client-id": clientIdSTD,
-                    "Authorization": channelData.access_token
-                }
-                await requestApiAuth(urlChannelA + "/" + clienteData.cxm_sesiondistribuida, "PUT", headersChannel);
-                sessionStorage.setItem("channelAcces", clienteData.cxm_sesiondistribuida);
-                pointerGSDC = setInterval(() => { Santander.Contact.getSesionDistCRM(false, envApis) }, 300 * 1000);
-            }
-            else {
-                console.log("Me convierto en creador de sesiones distribuida");
-                const timer = await Santander.Contact.getSesionDist();
-            }
-        }
-
-        /**
-          * @interface
-          * @typedef {Object} ENVBiometricosI
-          * @property {string} clientIdOauthBio
-          * @property {string} clientIdSerenity
-          * @property {string} clientIdStatusEnr
-          * @property {string} clientIdTokenOpaco
-          * @property {string} clientSecretOauth
-          * @property {string} stdGlobalId
-          * @property {string} urlOauth
-          * @property {string} urlStatus
-          * @property {string} urlTokenOpaco
-          * @property {string} urlTokenSerenity
-          * @property {string} clientIdAuth
-          * @property {string} tenantAuth
-          * @property {string} clientIdTokenApi
-          * @property {string} urlChannelA
-        */
-
-        /**
-         * 
-         * @returns {Promise<ENVBiometricosI>}
-         */
-        async function getENV() {
-            let reqEnv = await requestApiAuth("/api/data/v9.2/environmentvariablevalues?$select=value&$expand=EnvironmentVariableDefinitionId($select=schemaname)");
-            let dataEnv = reqEnv.data.value;
-            const findEnv = (nameEnv) => { return dataEnv.find(env => env.EnvironmentVariableDefinitionId.schemaname === nameEnv)?.value }
-            return {
-                clientIdOauthBio: findEnv("cxm_clientid_oauth_biometricos"),
-                clientIdSerenity: findEnv("cxm_clientid_serenity"),
-                clientIdStatusEnr: findEnv("cxm_clientid_status_enrolamiento"),
-                clientIdTokenOpaco: findEnv("cxm_clientid_token_opaco"),
-                clientSecretOauth: findEnv("cxm_clientsecret_oauth_biometricos"),
-                stdGlobalId: findEnv("cxm_std_global_id"),
-                urlOauth: findEnv("cxm_url_oauth_biometricos"),
-                urlStatus: findEnv("cxm_url_status_enrolamiento"),
-                urlTokenOpaco: findEnv("cxm_url_token_opaco"),
-                urlTokenSerenity: findEnv("cxm_url_token_serenity"),
-                urlVerify: findEnv("cxm_url_verify_enrolamiento"),
-                clientIdAuth: findEnv("cxm_clientid_auth"),
-                tenantAuth: findEnv("cxm_tenantid_auth"),
-                clientIdTokenApi: findEnv("cxm_claveid_api_std"),
-                urlChannelA: findEnv("cxm_url_channel_acc_std")
-            }
-        }
-
-        async function newNotification(message, level = 4) {
-            let notification = {
-                type: 1,
-                level, /* 1: Success   2: Error   3: Warning   4: Information */
-                message,
-                showCloseButton: true
-            };
-            const idNoti = await Xrm.App.addGlobalNotification(notification);
-            setTimeout(() => {
-                const noti = top.document.querySelector(`div[data-id="ToastNotification_${idNoti}"] p`)
-                if (noti) {
-                    noti.style.fontSize = "16px";
-                    noti.style.fontWeight = "600";
-                }
-            }, 100);
-        }
-
-        function getTransactionId(buc) {
-            const padStart = (number, length = 2) => { return number.toString().padStart(length, '0') }
-            const today = new Date();
-            return buc + today.getFullYear() + padStart(today.getMonth())
-                + padStart(today.getDay()) + padStart(today.getHours())
-                + padStart(today.getMinutes()) + padStart(today.getSeconds()) + padStart(today.getMilliseconds(), 3);
-        }
-
-        async function updateBiometricos(idIndicadores, flag) {
-            await requestApiAuth("/api/data/v9.2/cxm_mx_det_per_kpis(" + idIndicadores + ")", "PATCH", null, { cxm_biometrico: flag });
-            Xrm.Page.getAttribute("cxm_pcf_marcas").setValue(idIndicadores + Math.random());
-        }
-
-        /**
-         * 
-         * @param {string} bucVerify 
-         * @param {ENVBiometricosI} envBiometricos 
-         * @returns 
-         */
-        async function verifyActiveBiometricos(bucVerify, envBiometricos) {
-            const reqIndicadores = await requestApiAuth(`/api/data/v9.2/cxm_mx_det_per_kpis?$select=cxm_mx_det_per_kpiid,cxm_biometrico&$filter=cxm_buc eq '${bucVerify}'`)
-            if (!reqIndicadores.ok) return false;
-            const indicadores = reqIndicadores.data.value[0];
-            if (indicadores?.cxm_biometrico) return true;
-
-            const headerReqToken = {
-                "Accept": "*/*",
-                "Content-Type": "application/x-www-form-urlencoded",
-            }
-            const dataReqToken = {
-                scope: "resources.all",
-                grant_type: "client_credentials",
-                client_id: envBiometricos.clientIdSerenity,
-                client_secret: envBiometricos.clientSecretOauth
-            }
-            const reqToken = await requestApiAuth(envBiometricos.urlOauth, "POST", headerReqToken, new URLSearchParams(dataReqToken).toString())
-            if (!reqToken.ok) return;
-
-            const headerReqEnr = {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${reqToken.data.access_token}`,
-                "x-ibm-client-id": envBiometricos.clientIdStatusEnr,
-                "X-Santander-Global-Id": envBiometricos.stdGlobalId,
-            }
-            const bodyReqEnr = {
-                "transactionType": "1001",
-                "customerId": bucVerify,
-                "employeeId": "",
-                "channel": "12",
-                "branch": "1234",
-                "transactionId": getTransactionId(bucVerify)
-            }
-            const reqCheckEnr = await requestApiAuth(`${envBiometricos.urlStatus}?${new URLSearchParams(bodyReqEnr).toString()}`, "GET", headerReqEnr);
-            if (!reqCheckEnr.ok) return;
-
-            const dataStatus = reqCheckEnr.data;
-
-            if (dataStatus.enrollmentStatus === "ENROLADO") {
-                if (indicadores)
-                    await updateBiometricos(indicadores.cxm_mx_det_per_kpiid, true);
-                return true;
-            };
-            return false;
-        }
-        /**
-         * 
-         * @param {string} tokenOpaco 
-         * @param {ENVBiometricosI} envBiometricos 
-         */
-        function openFrameBioCheck(tokenOpaco, envBiometricos, activeBiometricos) {
-            let clientId = Xrm.Utility.getPageContext().input.entityId;
-            clientId = clientId.substring(1, clientId.length - 1);
-            const idEjecutivo = Xrm.Utility.getGlobalContext().userSettings.userId.replaceAll("{", "").replaceAll("}", "");
-            const codesBiocheck = {
-                "OK00": "Terminada con Exito (OK)",
-                "OK0000": "VerificaciÃ³n Exitosa",
-                "CA000": "Se cancelo el proceso.",
-                "EAC01": "Error inesperado en API Customers",
-                "EAC02": "No hay conexiÃ³n con servicio de consulta en API Customers",
-                "EAC03": "El nÃºmero de cliente no es vÃ¡lido",
-                "EAPC00": "Campos faltantes para completar la operaciÃ³n",
-                "EAPC01": "Error inesperado en API Customers",
-                "EAPC02": "El nÃºmero de cliente no es vÃ¡lido, favor de verificarlo",
-                "EAPC03": "Error inesperado en API Customers por deserializaciÃ³n",
-                "EBC00": "No hay comunicaciÃ³n con el Biocheck Window Service",
-                "ECC00": "Error en Consulta BiomÃ©trica Inesperado",
-                "ECC01": "No hay conexiÃ³n con servicio de consulta Biometrica",
-                "EDC01": "Error en dispositivo de captura de huella",
-                "EDC02": "Error en dispositivo de captura de rostro",
-                "EDC03": "Error en dispositivo de captura de documentos",
-                "EEB00": "Error de Enrolamiento  Inesperado",
-                "EEB01": "Error de Enrolamiento porque no hay conexiÃ³n con el servicio de enrolamiento",
-                "EEB02": "El sujeto ya se encuentra enrolado biomÃ©tricamente",
-                "EEB03": "El usuario no se encuentra enrolado biomÃ©tricamente",
-                "EEXG00": "OcurriÃ³ un Error en la operaciÃ³n, favor de volver a intentarlo. Si el problema persiste, favor de comunicarse con el administrador del sistema.",
-                "EHTT204": "HTTP: NO CONTENT",
-                "EHTT400": "HTTP: BAD REQUEST",
-                "EHTT401": "HTTP: UNAUTHORIZED",
-                "EHTT403": "HTTP: FORBIDDEN",
-                "EHTT404": "HTTP: NOT FOUND",
-                "EHTT405": "HTTP: METHOD NOT ALLOWED",
-                "EHTT406": "HTTP: NOT ACCEPTABLE",
-                "EHTT409": "HTTP: CONFLICT",
-                "EHTT415": "HTTP: UNSUPPORTED MEDIA TYPE",
-                "EHTT500": "HTTP: INTERNAL SERVER ERROR",
-                "EHTT503": "HTTP: SERVICE TEMPORARILY UNAVAILABLE",
-                "ELB00": "Error inesperado en la lectura de licencias",
-                "ELB01": "Error porque no hay servicios de Escaner de documentos activos",
-                "ELB02": "Error porque no hay Licencias de Huella activas",
-                "ELB03": "Error porque no hay Licencias de Escaner de documentos activas",
-                "EOB00": "Se terminaron los intentos de captura de huellas.",
-                "EOB01": "Huellas no pudieron se capturadas por calidad insuficiente",
-                "EOB02": "Huella duplicadas durante la captura",
-                "EOB03": "No se pudo capturar el rostro",
-                "EOB04": "Credencial del INE ApÃ³crifa",
-                "EOB05": "Credencial del INE  No vigente",
-                "EOB06": "Credencial del INE No legible",
-                "EOB07": "No coincide el nombre y fecha de nacimiento de la identificaciÃ³n con 390",
-                "EOB08": "Credencial FM3 ApÃ³crifa",
-                "EOB09": "Credencial FM3 no vigente",
-                "EOTP00": "Campos faltantes para completar la operaciÃ³n de OTP",
-                "EOTP01": "No se pudo conseguir el OAUTH necesario para la operaciÃ³n de OTP",
-                "EPE6801": "BUC Invalido verifÃ­quelo y vuelva a intentarlo.",
-                "EPE6802": "Error en la consulta de PE68. CÃ³digo de estatus: ",
-                "ER5E.500": "Error en Consulta BiomÃ©trica Inesperado",
-                "ETO00": "Error inesperado en la validaciÃ³n del Token",
-                "ETO01": "Error de Token Opaco por ser invÃ¡lido",
-                "ETO02": "Error de Token Opaco por estar caducado",
-                "ETO03": "Error de Token Opaco porque no existe",
-                "ETO04": "Error de Token Opaco porque estÃ¡ duplicado",
-                "ETO05": "Error de Token Opaco porque los datos son invÃ¡lidos",
-                "ETO06": "No se recibiÃ³ token opaco.",
-                "ETOG01": "No se pudo conseguir el OAUTH necesario para la operaciÃ³n de Token Opaco",
-                "ETOG02": "Error inespeerado en Token",
-                "ETOG03": "Error HTTP",
-                "ETOK00": "Campos faltantes para completar la operaciÃ³n de Token Opaco",
-                "ETOK01": "No se pudo conseguir el OAUTH necesario para la operaciÃ³n de Token Opaco",
-                "ETOV03": "Error HTTP",
-                "EVB00": "Error de VerificaciÃ³n Inesperado",
-                "EVB01": "El sujeto no se encuentra enrolado biomÃ©tricamente",
-                "EVB02": "Error de conexiÃ³n con el servicio de verificaciÃ³n de API Connect",
-                "EVD01": "CURP no vÃ¡lido en la RENAPO",
-                "EVD02": "OCR/CIC no vÃ¡lido en INE",
-                "EVD03": "Huellas no vÃ¡lidas en INE",
-                "EVD04": "Nombre registrado no coincide con el capturado",
-                "EVD05": "Error inesperado con servicio de INE de API Connect",
-                "EVD06": "No hay conexiÃ³n con servicio de RENAPO de API Connect",
-                "EVD07": "Error inesperado con servicio de RENAPO de API Connect",
-                "PRC00": "Enrolamiento  en proceso",
-                "OK0003": "VERIFICACION NO EXITOSA"
-            }
-            const windowBiometricos = window.open('', '_blank', 'width=1000,height=850,toolbar=no,location=no');
-            windowBiometricos.document.write(`
-      <title>Biocheck</title>
-      <iframe width="950" height="800" id="iframeBiometricos" title='iframeBiometricos' src=''></iframe>
-    `)
-            const iframe = windowBiometricos.document.getElementById("iframeBiometricos");
-            iframe.src = activeBiometricos ? envBiometricos.urlVerify : envBiometricos.urlVerify + "VentanillaINE";
-            iframe.title = "Biocheck"
-            windowBiometricos.addEventListener("message", async (e) => {
-                iframe.contentWindow.postMessage(tokenOpaco, "*");
-                if (typeof e.data === "string") {
-                    const code = JSON.parse(e.data).code;
-                    const message = code + ": " + (codesBiocheck[code] ?? "Sin informaciÃ³n del cÃ³digo de error");
-                    if (code[0] === "O" && code !== "OK0003") {
-                        newNotification(message, 1);
-                        await Xrm.WebApi.updateRecord("contact", clientId, { "cxm_usuariopermisofichaid@odata.bind": "/systemusers(" + idEjecutivo + ")" });
-                        window.top.location.reload();
-                    } else if (code[0] === "P") {
-                        newNotification(message, 4);
-                    } else {
-                        newNotification(message, 2);
-                    }
-                    windowBiometricos.close();
-                }
-            })
-        }
-
-        // Funcion para abrir formulario de creaciÃ³n rapida de cliente
-        // Autor: Jorge A. GonzÃ¡lez Valencia
-        // Fecha: 20 Septiembre 2023
-        Santander.Contact.QuitarOpcionesTipoMedioContacto = function (executionContext) {
-            formContext = executionContext.getFormContext();
-            var optionSet = formContext.getControl(contactForm.fields.tipoMedioDeContacto);
-            if (optionSet !== null) {
-                optionSet.removeOption(1);
-                optionSet.removeOption(2);
-            }
-        }
-
-        Santander.Contact.validateBiometricos = async function () {
-            let clientId = Xrm.Utility.getPageContext().input.entityId;
-            clientId = clientId.substring(1, clientId.length - 1);
-            const reqClient = await requestApiAuth("/api/data/v9.2/contacts(" + clientId + ")?$select=cxm_bucid");
-            const userData = reqClient.data;
-            const envBiometricos = await getENV();
-            const activeBiometricos = await verifyActiveBiometricos(userData.cxm_bucid, envBiometricos);
-
-            const reqToken = await requestApiAuth("/api/data/v9.2/cxm_APIsSTD", "POST", null, {
-                buc: "",
-                code: "",
-                authApi: "biometricos",
-                channelInfo: "",
-                scope: "oauth-token-management_1.0.0"
-            })
-            if (!reqToken.ok) {
-                newNotification("Problemas al llamar al servicio de biometricos, intente mÃ¡s tarde");
-                return true;
-            }
-            const tokenSerenity = JSON.parse(reqToken.data.dataOut).access_token;
-
-            const headerReqTokenO = {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "x-ibm-client-id": envBiometricos.clientIdTokenOpaco,
-                "Authorization": `Bearer ${tokenSerenity}`,
-                "MsgRqHdr": JSON.stringify({ "UserId": "JAVI12", "ClientIPAddress": "USERIP", "ClientSessionId": "SESSIONID", "ClientId": "CLIENTID" })
-            }
-            const dataReqTokenOpaco = {
-                "SecObjInfo": {
-                    "SecObjData": [
-                        {
-                            "SecObjDataKey": "ipUsuario",
-                            "SecObjDataValue": "180.51.145.136",
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "UserId",
-                            "SecObjDataValue": "N011046",
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "BUC",
-                            "SecObjDataValue": userData.cxm_bucid,
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "Num.Sucursal",
-                            "SecObjDataValue": "1234",
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "Num.Terminal",
-                            "SecObjDataValue": "1234",
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "Canal",
-                            "SecObjDataValue": "01",
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "AppId",
-                            "SecObjDataValue": "Reingenieria N4",
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "TransactionId",
-                            "SecObjDataValue": getTransactionId(userData.cxm_bucid),
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "EstatusPersona",
-                            "SecObjDataValue": "NO ENROLADO",
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "TipoOperacion",
-                            "SecObjDataValue": "VERIFICACION",
-                            "SecObjDataType": "STRING"
-                        },
-                        {
-                            "SecObjDataKey": "TipoOperacionApp",
-                            "SecObjDataValue": "CMTC",
-                            "SecObjDataType": "STRING"
-                        }
-                    ]
-                }
-            };
-            const reqTokenO = await requestApiAuth(envBiometricos.urlTokenOpaco, "POST", headerReqTokenO, dataReqTokenOpaco)
-
-            if (reqTokenO.ok) {
-                const tokenOpaco = reqTokenO.data.SecObjRec.SecObjInfo.SecObjValue;
-                openFrameBioCheck(tokenOpaco, envBiometricos, activeBiometricos)
-            } else {
-                newNotification("Problemas al llamar al servicio de biometricos, intente mÃ¡s tarde");
-            }
-
-        }
-
-        Santander.Contact.PopUpClienteContactado = async function (ACCTemporales, PrimaryControl) {
-            let _recordId = PrimaryControl.data.entity.getId();
-            _recordId = _recordId.replace("{", "").replace("}", "");
-            let _entityName = PrimaryControl.data.entity.getEntityName();
-
-            let pageInput = {
-                pageType: "custom",
-                name: contactForm.custompage.clienteContactado,
-                entityName: _entityName,
-                recordId: _recordId,
-            };
-            let navigationOptions = {
-                target: 2,
-                height: { value: 400, unit: "px" },
-                width: { value: 300, unit: "px" },
-                position: 1,
-                title: "Cliente contactado"
-            };
-            Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(async function success(result) {
-                let datosContacto = await Xrm.WebApi.online.retrieveRecord("contact", getClientId(), "?$select=_cxm_motivorespuestaid_value,cxm_clientecontactado");
-                Santander.Contact.GestionarACCTemporales(ACCTemporales, datosContacto);
-                await Xrm.WebApi.updateRecord("contact", getClientId(), { "_cxm_motivorespuestaid_value": null, cxm_clientecontactado: 2 });
-            }
-            );
-        }
-
-        Santander.Contact.GestionarACCTemporales = async function (ACCTemporales, datosContacto) {
-            ACCTemporales.forEach(async (accionTemporal) => {
-                const reqAccTemp = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_mx_rel_acc_temp_accionclientecanals?$select=cxm_idorigenacccliente,cxm_mx_rel_acc_temp_accionclientecanalid&$filter=(cxm_mx_rel_acc_temp_accionclientecanalid eq " + accionTemporal.Id + ")");
-                if (reqAccTemp.ok) {
-                    const idorigenacccliente = reqAccTemp.data.value[0].cxm_idorigenacccliente;
-                    let id = accionTemporal.Id;
-                    const reqOportunidad = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/opportunities?$select=cxm_idorigenacccliente,opportunityid&$expand=bpf_opportunity_cxm_procesodegestionacc($select=_processid_value)&$filter=(cxm_idorigenacccliente eq '" + idorigenacccliente + "') and (bpf_opportunity_cxm_procesodegestionacc/any(o1:(o1/businessprocessflowinstanceid ne null)))");
-                    if (reqOportunidad.ok && reqOportunidad.data.value.length > 0 && datosContacto.cxm_clientecontactado === 1) {
-                        const AccTempOportunidad = {
-                            idEtapaBPF: reqOportunidad.data.value[0].bpf_opportunity_cxm_procesodegestionacc[0]._processid_value,
-                            oportunidadId: reqOportunidad.data.value[0].opportunityid
-                        }
-
-                        Santander.Contact.RedireccionarOportunidad(AccTempOportunidad);
-                    } else if (datosContacto.cxm_clientecontactado === 1 || datosContacto._cxm_motivorespuestaid_value != null) {
-                        const accTemp = { id, idorigenacccliente };
-                        const requestGestion = { contact: getClientId(), accTemporal: [accTemp], contactado: datosContacto.cxm_clientecontactado === 1 ? true : false, motivoid: datosContacto._cxm_motivorespuestaid_value };
-                        const request = JSON.stringify(requestGestion);
-                        let requestOportunidad = await requestAPI(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/contacts(" + getClientId() + ")/Microsoft.Dynamics.CRM.cxm_GeneraOportunidadBPF", "POST", { request });
-                        if (requestOportunidad.data.response) {
-                            let response = JSON.parse(requestOportunidad.data.response);
-                            if (response.ok) {
-                                if (datosContacto.cxm_clientecontactado === 1)
-                                    Santander.Contact.RedireccionarOportunidad(response);
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        Santander.Contact.RedireccionarOportunidad = async function (response) {
-            let fullname = await Xrm.WebApi.online.retrieveRecord("contact", getClientId(), "?$select=fullname").fullname;
-            let entityFormOptions = {
-                entityName: "opportunity",
-                openInNewWindow: true,
-                selectedStageId: response?.idEtapaBPF,
-                entityId: response?.oportunidadId
-            };
-            let formParameters = {
-                cxm_contactid: getClientId(),
-                cxm_contactidname: fullname
-            };
-            Xrm.Navigation.openForm(entityFormOptions, formParameters)
-        }
-
-        // Funcion para ocultar secciones de contactabilidad
-        // Autor: Heber Zabdiel Hernandez Martinez
-        // Fecha: 03 Noviembre 2023
-
-        Santander.Contact.VisibilidadContactabilidad = async function () {
-            let auxTutela = await getPermiso("TUTELA", "lectura") === "TRUE";
-            if (!auxTutela) {
-                let tab = formContext.ui.tabs.get(contactForm.tabs.gestionacc);
-                tab.sections.get(contactForm.sections.contactabilidadNotificaciones).setVisible(false);
-                tab.sections.get(contactForm.sections.contactabilidadPersonal).setVisible(false);
-                tab.sections.get(contactForm.sections.contactabilidadLaboral).setVisible(false);
-                tab.sections.get(contactForm.sections.contactabilidadAlternativo).setVisible(false);
-            }
-        }
-
-
-        Santander.Contact.oportunidadGrid = function (formContext) {
-            let gridControl1 = formContext.getControl(contactForm.subgrid.subgridOportunidad);
-            let gridControl2 = formContext.getControl(contactForm.subgrid.subgridMercado);
-            function abrirRegistrosEnSubgrid(gridControl) {
-                if (gridControl) {
-                    const selectedRecords = gridControl.getGrid().getSelectedRows();
-                    if (selectedRecords.getLength() > 0) {
-                        const entityName = "opportunity";
-                        selectedRecords.forEach(function (row) {
-                            const entity = row.getData().getEntity();
-                            const recordId = entity.getId();
-                            Xrm.Navigation.openForm({
-                                entityName: entityName,
-                                entityId: recordId,
-                                openInNewWindow: true
-                            });
-                        });
-                    } else {
-                        console.log("No se han seleccionado registros en el subgrid " + gridControl.getName() + ".");
-                    }
-                } else {
-                    console.log("El subgrid " + gridControl.getName() + " no estÃ¡ presente en el formulario.");
-                }
-            }
-            abrirRegistrosEnSubgrid(gridControl1);
-            abrirRegistrosEnSubgrid(gridControl2);
-        };
-        if (ApplicationInsights === "undefined") {
-            var ApplicationInsights = {};
-        }
-        ApplicationInsights = {
-            trackApplicationInsight: function (entityName, properties) {
-                var appInsights = window.appInsights || function (config) { function i(config) { t[config] = function () { var i = arguments; t.queue.push(function () { t[config].apply(t, i) }) } } var t = { config: config }, u = document, e = window, o = "script", s = "AuthenticatedUserContext", h = "start", c = "stop", l = "Track", a = l + "Event", v = l + "Page", y = u.createElement(o), r, f; y.src = config.url || "https://az416426.vo.msecnd.net/scripts/a/ai.0.js"; u.getElementsByTagName(o)[0].parentNode.appendChild(y); try { t.cookie = u.cookie } catch (p) { } for (t.queue = [], t.version = "1.0", r = ["Event", "Exception", "Metric", "PageView", "Trace", "Dependency"]; r.length;) i("track" + r.pop()); return i("set" + s), i("clear" + s), i(h + a), i(c + a), i(h + v), i(c + v), i("flush"), config.disableExceptionTracking || (r = "onerror", i("_" + r), f = e[r], e[r] = function (config, i, u, e, o) { var s = f && f(config, i, u, e, o); return s !== !0 && t["_" + r](config, i, u, e, o), s }), t }(
-                    {
-                        instrumentationKey: "23f25cb6-37e1-47a0-9265-c8800368f874"//Recommended not to hardcode here but bring it from configuration/Envirnment variable
-                    });
-                window.appInsights = appInsights;
-
-                appInsights.trackPageView(entityName, Xrm.Utility.getGlobalContext().getClientUrl(), properties);
-            }
-        }
-        Santander.Contact.AppInsightsMetricas = function () {
-            try {
-                let operationType = '';
-                if (formContext.ui.getFormType() == 1) { operationType = 'Create'; } else { operationType = 'Update'; }
-                let userSettings = Xrm.Utility.getGlobalContext().userSettings;
-                let properties = { User: userSettings.userName, ObjectId: formContext.data.entity.getId(), OperationType: operationType, TriggerEvent: 'Form Load' };
-                let entityName = formContext.data.entity.getEntityName();
-                ApplicationInsights.trackApplicationInsight(entityName, properties);
-            }catch(e){
-                console.log("error en AppInsightsMetricas: "+e);
-            }
-            
-        }
-    })(Contact = Santander.Contact || (Santander.Contact = {}));
+  })(opportunity = Santander.Opportunity || (Santander.Opportunity = {}));
 })(window.Santander = window.Santander || {});
