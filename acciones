@@ -1,0 +1,432 @@
+(function (Santander) {
+  let AccionesComerciales;
+  (function (AccionesComerciales) {
+    "use strict";
+    let contactForm = {
+      fields: {
+        clienteContactado: "cxm_clientecontactado",
+        //medioContactado: "cxm_origenid", //lookup
+        tipoMedioContacto: "cxm_tipomediocontacto",// tipo medio contacto picklist
+        telefonoContacto: "cxm_telefonoscontacto",
+        correoContacto: "cxm_correoscontacto",
+        motivo: "cxm_comentariootro",
+        correosContacto: "cxm_correoscontacto",
+        direccionesContacto: "cxm_direccionescontacto",
+        dirrecionContacto: "cxm_direccionescontacto",
+        respuestaActividad: "cxm_respuestaactividadid",
+        motivoRespuestaActividad: "cxm_motivorespuestaactividadid",
+        actividadCita: "cxm_actividadcitaid",
+        actividadLlamada: "cxm_actividadllamadaid",
+        clienteContactado: "cxm_clientecontactado",
+        pcfGestion: "cxm_pcfgestionaccioncomercial",
+        opcionContactado: "cxm_opcionesclientenocontactado",
+        noContactado: "cxm_opcionesclientenocontactado",
+        comentarioOtro: "cxm_comentariootro",
+        fichaCliente: "cxm_mx_hst_per_fichacliente",
+        pcfAccionesComerciales: "cxm_pcf_accionescomerciales",
+        nombreCliente: "fullname",
+        buc: "cxm_bucid",
+        tPersonal: "address1_telephone1",
+        tLaboral: "address1_telephone2",
+        tAlternativo: "address1_telephone3",
+        tNotificaciones: "address2_telephone1"
+
+      },
+      sections: {
+         contactabilidadNotificaciones: "tab_7_section_4",
+         contactabilidadPersonal: "tab_7_section_1",
+         contactabilidadLaboral: "tab_7_section_5",
+         contactabilidadAlternativo: "tab_7_section_6"
+      },
+      timeline: {
+        timelineACC: "Timeline"
+      },
+      optionsSet: {},
+      labels: {},
+      tabs: {},
+      parentExecutionContext: null,
+      parentFormContext: null,
+      dataOportunidades: [],
+      MatrizGestionOfertas: [],
+      MatrizGestionActividades: [],
+      oportunidades: null,
+      activoBtnFin: false
+    }
+    Santander.AccionesComerciales.hidePCF = function (executionContext) {
+      let formContext = executionContext.getFormContext();
+      let visible = Santander.AccionesComerciales.validateGeneralData(formContext);
+      Santander.AccionesComerciales.ocultarPCF(visible, formContext);
+    }
+    /////////
+    Santander.AccionesComerciales.contactado = function (executionContext) {
+      let formContext = executionContext.getFormContext();
+      formContext.getAttribute(contactForm.fields.tipoMedioContacto).setValue();
+      formContext.getControl(contactForm.fields.telefonoContacto).setVisible(false);
+      formContext.getControl(contactForm.fields.correoContacto).setVisible(false);
+      formContext.getControl(contactForm.fields.dirrecionContacto).setVisible(false);
+      formContext.getControl(contactForm.fields.pcfGestion).setVisible(false);
+
+    }
+    // Validar campos
+    // Autor: Hector Antonio Mota Galvan
+    // Fecha: 29 Agosto 2022
+    // Modificado por: Jesus Enrique Rojas Pedraza
+    Santander.AccionesComerciales.validateGeneralData = function (formContext) {
+
+      let contactado = formContext.getAttribute(contactForm.fields.clienteContactado).getSelectedOption();
+      //let actividad = formContext.getAttribute(contactForm.fields.medioContactado).getValue();
+
+      let actividad = formContext.getAttribute(contactForm.fields.tipoMedioContacto).getSelectedOption();
+      let medioTelefono = formContext.getAttribute(contactForm.fields.telefonoContacto).getSelectedOption();
+      let medioCorreo = formContext.getAttribute(contactForm.fields.correoContacto).getSelectedOption();
+      let medioDireccion = formContext.getAttribute(contactForm.fields.dirrecionContacto).getSelectedOption();
+      //let opcionContactado = formContext.getAttribute(contactForm.fields.opcionContactado).getValue();
+      //let comentario = formContext.getAttribute(contactForm.fields.comentarioOtro).getValue();
+      let actividadCita = formContext.getAttribute(contactForm.fields.actividadCita).getValue();//cita
+
+      if (contactado && actividad && (medioCorreo || medioDireccion || medioTelefono || actividadCita))
+        return true
+
+      if (contactado?.value && actividad?.value == 4)
+        return true
+
+      return false
+
+    }
+    // Ocultar o mostrar PCF
+    // Autor: Hector Antonio Mota Galvan
+    // Fecha: 29 Agosto 2022
+    // Modificado por: Jesus Enrique Rojas Pedraza
+    Santander.AccionesComerciales.ocultarPCF = function (visible, formContext) {
+      formContext.getAttribute(contactForm.fields.pcfGestion).setValue("");
+      if (visible) {
+        let idcliente = formContext.data.entity.getId().replace('{', '').replace('}', '');
+        let medio = formContext.getAttribute(contactForm.fields.tipoMedioContacto)?.getSelectedOption() ?? null;
+        //let medio = formContext.getAttribute(contactForm.fields.medioContactado)?.getValue() ? formContext.getAttribute(contactForm.fields.medioContactado)?.getValue()[0] : null;
+
+        let actividadCita = formContext.getAttribute(contactForm.fields.actividadCita)?.getValue() ? formContext.getAttribute(contactForm.fields.actividadCita)?.getValue()[0] : null;
+        let actividadLlamada = formContext.getAttribute(contactForm.fields.actividadLlamada)?.getValue() ? formContext.getAttribute(contactForm.fields.actividadLlamada)?.getValue()[0] : null;
+        let medioTelefono = formContext.getAttribute(contactForm.fields.telefonoContacto).getSelectedOption() ?? null;
+        let medioCorreo = formContext.getAttribute(contactForm.fields.correoContacto).getSelectedOption() ?? null;
+        let medioDireccion = formContext.getAttribute(contactForm.fields.dirrecionContacto).getSelectedOption() ?? null;
+        //let comentarioOtro = formContext.getAttribute(contactForm.fields.comentarioOtro)?.getValue() ? formContext.getAttribute(contactForm.fields.comentarioOtro)?.getValue() : null;
+        //let noContactado = formContext.getAttribute(contactForm.fields.noContactado).getSelectedOption() ?? null;
+
+        let data = {
+          "id": idcliente,
+          "origenId": medio == null ? medio : medio.value,
+          "origen": medio == null ? medio : medio.text,
+          "actividadCita": actividadCita == null ? actividadCita : actividadCita.id.replace('{', '').replace('}', ''),
+          "actividadLlamada": actividadLlamada == null ? actividadLlamada : actividadLlamada.id.replace('{', '').replace('}', ''),
+          "medioTelefono": medioTelefono == null ? medioTelefono : medioTelefono.value,
+          "medioCorreo": medioCorreo == null ? medioCorreo : medioCorreo.value,
+          "medioDireccion": medioDireccion == null ? medioDireccion : medioDireccion.value,
+          contactado: formContext.getAttribute(contactForm.fields.clienteContactado).getSelectedOption()?.value,
+          //noContactado: noContactado == null ? noContactado : noContactado.value,
+          //comentarioOtro
+        }
+        console.log(data);
+        formContext.getAttribute(contactForm.fields.pcfGestion).setValue(JSON.stringify(data));
+      }
+      formContext.getControl(contactForm.fields.pcfGestion).setVisible(visible);
+    }
+
+    // FunciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n para establecer persona en el formulario de creaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n rapida de oportunidad
+    // Autor: Jorge A. GonzÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lez Valencia
+    // Fecha: 22 Diciembre 2022
+    Santander.AccionesComerciales.EstablecerPersonaOportunidad = function (executionContext) {
+      let formContext = executionContext.getFormContext();
+
+      if (typeof (Storage) !== 'undefined') {
+        let persona = localStorage.getItem("Persona");
+        formContext.getAttribute("parentcontactid").setValue(JSON.parse(persona));
+        formContext.getAttribute("cxm_mercadoabierto").setValue(true);
+      }
+    }
+
+    // Funcion visualizar timeline acc
+    // Autor: Luis Bermudez Dionicio
+    // Fecha: 05/01/2023
+    // Modificacion: -- -- ----
+    Santander.AccionesComerciales.visualizaTimelineACC = async function (executionContext) {
+      //const idCliente = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
+      const dataEje = Xrm.Utility.getGlobalContext().userSettings
+      const IDEjecutivo = dataEje.userId.substring(1, dataEje.userId.length - 1);
+
+      const formatearFecha = fecha => {
+        const mes = fecha.getMonth() + 1;
+        const dia = fecha.getDate();
+        let hour = fecha.getHours();
+        const ampm = hour >= 12 ? 'pm' : 'am';
+        hour = (hour % 12) || 12;
+        let hourFinal = hour;
+        const minutos = fecha.getMinutes();
+        const segundos = fecha.getSeconds();
+
+        return `${(dia < 10 ? '0' : '').concat(dia)}/${(mes < 10 ? '0' : '').concat(mes)}/${fecha.getFullYear()}, ${(hourFinal < 10 ? '0' : '').concat(hourFinal)}:${(minutos < 10 ? '0' : '').concat(minutos)}:${(segundos < 10 ? '0' : '').concat(segundos)}` + " " + ampm;
+
+      };
+      const fechaDeHoy = new Date();
+      const fechaFormateada = formatearFecha(fechaDeHoy);
+      console.log(fechaFormateada);
+
+      const idCliente = Xrm.Utility.getPageContext().input.entityId
+      const [dataClient, claveOficial] = await Promise.all([
+        Xrm.WebApi.online.retrieveRecord("contact", idCliente.substring(1, idCliente.length - 1), "?$select=fullname"),
+        Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_cat_usu_arbol_oficial", "?$select=cxm_claveoficial&$filter=_cxm_usuarioid_value eq " + IDEjecutivo)
+      ]);
+      let formContext = executionContext.getFormContext();
+      let idActividad = 0;
+
+      await Xrm.WebApi.createRecord(contactForm.fields.fichaCliente, {
+        "regardingobjectid_contact_cxm_mx_hst_per_fichacliente@odata.bind": "/contacts(" + idCliente.substring(1, idCliente.length - 1) + ")",
+        description: "El ejecutivo " + dataEje.userName + " visualizo Acciones Comerciales, " + fechaFormateada,
+        cxm_ejecutivo: dataEje.userName,
+        "cxm_ejecutivoid_cxm_mx_hst_per_fichacliente@odata.bind": "/systemusers(" + IDEjecutivo + ")",
+        cxm_cliente: dataClient.fullname,
+        cxm_claveoficial: claveOficial.entities.length > 0 ? claveOficial.entities[0].cxm_claveoficial : 'sin clave de oficial'
+      }).then(
+        function success(result) {
+          idActividad = result.id
+          console.log("Registro creado con ID: " + result.id);
+        },
+        function (error) {
+          console.log(error.message);
+        }
+      );
+      Xrm.WebApi.updateRecord("cxm_mx_hst_per_fichacliente", idActividad, { "statecode": 1 }).then(
+        function success(result) {
+          console.log("registro actualizado");
+        },
+        function (error) {
+          console.log(error.message);
+        }
+      );
+      formContext.getControl(contactForm.timeline.timelineACC).refresh();
+
+    }
+
+
+    // Funcion para limpiar datos de un cliente contactado o no
+    // Autor: Arturo Cesar Vilchis Serrano
+    // Fecha: 05 Julio 2022
+    // Modificacion: -- -- ----
+    Santander.AccionesComerciales.LimpiarDatos = function (executionContext) {
+      var formContext = executionContext.getFormContext();
+
+      formContext.getAttribute(contactForm.fields.motivo).setValue(null);
+      formContext.getAttribute(contactForm.fields.correosContacto).setValue(null);
+      formContext.getAttribute(contactForm.fields.direccionesContacto).setValue(null);
+      formContext.getAttribute(contactForm.fields.clienteContactado).setValue(null);
+      formContext.getAttribute(contactForm.fields.clienteContactado).fireOnChange();
+      formContext.getAttribute(contactForm.fields.actividadLlamada).setValue(null);
+      formContext.getAttribute(contactForm.fields.actividadCita).setValue(null);
+      console.log("Datos borrados")
+    }
+
+    // Comprobar finalizacion de la gestion
+    // Autor: Jesus Enrique Rojas Pedraza
+    // Fecha: 29 Agosto 2022
+    // Modificado por: 
+    Santander.AccionesComerciales.onChangePCFgestionACC = function (executionContext) {
+      let formContext = executionContext.getFormContext();
+      let pcf = formContext.getAttribute(contactForm.fields.pcfGestion).getValue();
+
+      if (pcf === "Finalizar") {
+        Santander.AccionesComerciales.LimpiarDatos(executionContext);
+        formContext.getControl(contactForm.timeline.timelineACC).refresh();
+
+      }
+    }
+    Santander.AccionesComerciales.FichaClienteAC = async function (executionContext) {
+      const formContext = executionContext.getFormContext();
+      const dataEje = Xrm.Utility.getGlobalContext().userSettings;
+      const usuarioid = dataEje.userId.substring(1, dataEje.userId.length - 1);
+      let clienteid = formContext.data.entity.getId();
+      let nombreCliente = formContext.getAttribute(contactForm.fields.nombreCliente).getValue();
+      let buc = formContext.getAttribute(contactForm.fields.buc).getValue();
+      let tipoOption = 2;
+      // Parameters
+      fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_AuditoriaFichaCliente", {
+        method: "POST",
+        headers: {
+          "OData-MaxVersion": "4.0",
+          "OData-Version": "4.0",
+          "Content-Type": "application/json; charset=utf-8",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          nombreCliente,
+          usuarioid,
+          clienteid,
+          texto: "visualizo Acciones comerciales del cliente ",
+          buc,
+          tipoOption
+        })
+      }).then(
+        function success(response) {
+          return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
+        }
+      ).then(function (responseObjects) {
+        let response = responseObjects[0];
+        let responseBody = responseObjects[1];
+        let result = responseBody;
+        let status = result["status"]; // Edm.String
+        if (status.Id) {
+          // Refrescar timeline
+          formContext.getControl(contactForm.timeline.timelineACC).refresh();
+        }
+      }).catch(function (error) {
+        console.log(error.message);
+      })
+    }
+
+    // FunciÃ³n para obtener el valor actividad
+    // Autor: Luis Bermudez
+    // Fecha: 15 marzo 2023
+    // Modificacion: -- -- ----
+    Santander.AccionesComerciales.getActividadAbierta = async function (executionContext) {
+      /* - statecode: 0 Abierto, 1 Completado, 2 Cancelado */
+      let formContext = executionContext.getFormContext();
+      let medio = formContext.getAttribute(contactForm.fields.tipoMedioContacto)?.getSelectedOption() ?? null;
+
+      const dataEje = Xrm.Utility.getGlobalContext().userSettings
+      const IDEjecutivo = dataEje.userId.substring(1, dataEje.userId.length - 1);
+
+      const actividadLlamadaFetchXML = `
+          <fetch>
+           <entity name="phonecall" >
+              <attribute name="subject" />
+              <attribute name="activityid" />
+              <attribute name="statecode" />
+              <filter type="and" >
+                  <condition attribute="statecode" operator="eq" value="0" />
+                  <condition attribute="createdby" operator="eq" value="`+ IDEjecutivo + `" />
+                  <condition attribute="createdon" operator="today" />
+              </filter>
+              <link-entity name="systemuser" from="systemuserid" to="createdby" />
+           </entity>
+          </fetch>`;
+
+      Xrm.WebApi.retrieveMultipleRecords("phonecall", "?fetchXml=" + actividadLlamadaFetchXML).then(
+
+
+        function success(result) {
+
+          let setPhone = new Array();
+          setPhone[0] = new Object();
+          setPhone[0].id = result.entities[0]["activityid"]
+          setPhone[0].name = result.entities[0]["subject"]
+          setPhone[0].entityType = "phonecall"
+
+          if (medio.text == "Llamada" || medio.text == "SMS") {
+            formContext.getAttribute(contactForm.fields.actividadLlamada).setValue(setPhone);
+            console.log("Imprime GUID phonecall: ", setPhone)
+          }
+
+        },
+        function (error) {
+          console.log(error.message);
+        }
+
+
+      );
+
+      const actividadCitaFetchXML = `
+          <fetch>
+          <entity name="appointment" >
+              <attribute name="subject" />
+              <attribute name="activityid" />
+              <attribute name="statecode" />
+              <filter type="and" >
+              <condition attribute="statecode" operator="eq" value="0" />
+              <condition attribute="createdby" operator="eq" value="`+ IDEjecutivo + `" />
+              <condition attribute="createdon" operator="today" />
+          </filter>
+          </entity>
+          </fetch>`;
+
+      Xrm.WebApi.retrieveMultipleRecords("appointment", "?fetchXml=" + actividadCitaFetchXML).then(
+
+
+        function success(result) {
+
+          let setAppo = new Array();
+          setAppo[0] = new Object();
+          setAppo[0].id = result.entities[0]["activityid"]
+          setAppo[0].name = result.entities[0]["subject"]
+          setAppo[0].entityType = "appointment"
+
+          if (medio.text == "Visita" || medio.text == "Cita") {
+            formContext.getAttribute(contactForm.fields.actividadCita).setValue(setAppo);
+            console.log("Imprime GUID appointment: ", setAppo)
+          }
+
+        },
+        function (error) {
+          console.log(error.message);
+        }
+
+
+      );
+    }
+
+
+      // FunciÃƒÂ³n para ocultar campo telefono
+        // Autor: Luis Bermudez
+        // Fecha: 02 Noviembre 2023
+        // Modificacion: -- -- ----
+        Santander.AccionesComerciales.hideContactabilidad = async function (executionContext) {
+            console.log("Entra a hideContactabilidad")
+            const formContext = executionContext.getFormContext();
+            const gridControl = formContext.getControl("Subgrid_new_2");
+            const tabACC = formContext.ui.tabs.get("tab_gestionACC");
+            let sections = contactForm.sections;
+
+            let sectionsCondicion = [
+                sections.contactabilidadAlternativo,
+                sections.contactabilidadLaboral,
+                sections.contactabilidadNotificaciones,
+                sections.contactabilidadPersonal
+            ];
+
+            let sectionVisible = sectionsCondicion.every((section) => {
+                return tabACC.sections.get(section).getVisible();
+            });
+
+            if (sectionVisible) {
+                const hideContactos = (selectedRows) => {
+                    if (selectedRows > 0) {
+                        formContext.getControl(contactForm.fields.tPersonal).setVisible(true);//Personal
+                        formContext.getControl(contactForm.fields.tLaboral).setVisible(true);//Laboral
+                        formContext.getControl(contactForm.fields.tNotificaciones).setVisible(true);
+                        formContext.getControl(contactForm.fields.tAlternativo).setVisible(true);
+                    } else {
+                        formContext.getControl(contactForm.fields.tPersonal).setVisible(false);//Personal
+                        formContext.getControl(contactForm.fields.tLaboral).setVisible(false);//Laboral
+                        formContext.getControl(contactForm.fields.tNotificaciones).setVisible(false);
+                        formContext.getControl(contactForm.fields.tAlternativo).setVisible(false);
+                    }
+                }
+                hideContactos(gridControl.getGrid().getSelectedRows().getLength());
+
+                gridControl.getGrid().addOnRecordSelect(selItem => {
+                    hideContactos(gridControl.getGrid().getSelectedRows().getLength());
+                })
+            };
+
+            gridControl.addOnLoad(() => {
+                gridControl.getGrid().getRows().forEach((row) => {
+                    let entity = row.getData().getEntity();
+                    const statusCode = entity.attributes.get("statuscode");
+                    if (statusCode.getValue() !== 777400001 && statusCode.getValue() !== 157180001) {
+                        statusCode.setValue(777400001);
+                        entity.save();
+                    }
+                });
+            })
+        }
+        
+        
+  })(AccionesComerciales = Santander.AccionesComerciales || (Santander.AccionesComerciales = {}));
+})(window.Santander = window.Santander || {});
