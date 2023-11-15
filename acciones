@@ -1,168 +1,626 @@
+// JavaScript source codee
 (function (Santander) {
-    let Task;
-    (function (Task) {
-        "use strict";
-        let currSeconds = 0;
-        let formContext;
-        let taskForm = {
-            fields: {
-                llamarA: "to",
-                referenteA: "regardingobjectid",
-                nombreCliente: "fullname",
-                buc: "cxm_bucid"
+  var BpfJS;
+  (function (BpfJS) {
+    "use strict";
+    let formContext;
+    let navigateFlag = false;
+    const dataForm = {
+      fields: {
+        mercadoAbierto: "cxm_mercadoabierto",
+        banderaCierre: "cxm_banderacierreaccbpf",
+        tipoGestion: "cxm_tipogestion",
+        fechaContratacion: "cxm_fechacontratacion",
+        bpfStage: "stepname"
+      },
+      optionsSet: {
+        sexo: {
+          masculino: 1,
+          femenino: 2,
+          noDefinido: 3
+        }
+      },
+      labels: {
+        sexo: {
+          hombre: "Hombre",
+          mujer: "Mujer",
+          noDefinido: "No definido"
+        }
+      },
+      tabs: {
+      },
+      sections: {
+      },
+      custompage: {
+        desbloqueoFicha: "cxm_desbloqueooportunidad_0d949"
+      },
+      subgrid: {
+      },
+      dom: {
+        bpfContainer: "bpfContainer"
+      },
+      titles: {
+        desbloqueoOp: "Desbloqueo de oportunidad"
+      },
+      guid: {
+        mercadoAbiertoForm: "ed6b69c1-7c88-ed11-81ac-6045bd019be7",
+        accionComercialForm: "d876915b-8188-ed11-81ac-6045bd019817"
+      }
+    }
+
+    Santander.BpfJS.OnLoad = async function (executionContext) {
+      formContext = executionContext.getFormContext();
+      const mercado = formContext.getAttribute(dataForm.fields.mercadoAbierto).getValue();
+      ChangeFormBPF(mercado);
+      if (!navigateFlag) {
+        ManageForms(mercado);
+      }
+    }
+
+    function ManageForms(mercado) {
+      if (mercado) { // Mercado Abierto Form
+        const stageBPF = formContext.getAttribute(dataForm.fields.bpfStage).getValue();
+        if (stageBPF === "1-Contactar") {
+          formContext.data.process.moveNext();
+        }
+      } else { // Accion Comercial Form
+        formContext.getAttribute(dataForm.fields.banderaCierre).setValue(false);
+        if (Santander.BpfJS.btnDesbloqueoVisibilidad(formContext)) {
+          formContext.data.process.addOnPreStageChange(handleBlockChangeStage);
+        }
+      }
+    }
+
+    const ChangeFormBPF = function (mercado) {
+      const getFormACC = formContext.ui.formSelector.items.get(dataForm.guid.accionComercialForm);
+      const getFormMA = formContext.ui.formSelector.items.get(dataForm.guid.mercadoAbiertoForm);
+      const currentFormID = formContext.ui.formSelector.getCurrentItem().getId();
+      console.log(currentFormID);
+      if (mercado && currentFormID !== dataForm.guid.mercadoAbiertoForm) {
+        getFormMA.navigate();
+        navigateFlag = true;
+      } else if (!mercado && currentFormID !== dataForm.guid.accionComercialForm) {
+        getFormACC.navigate();
+        navigateFlag = true;
+      }
+    }
 
 
+    function handleBlockChangeStage(e) {
+      let bpfArgs = e.getEventArgs();
+      bpfArgs.preventDefault();
+      Xrm.Navigation.openAlertDialog({ text: "No puede gestionar esta oportunidad ya que no es propietario.", title: "Sin permisos" });
+    }
+
+
+    Santander.BpfJS.btnDesbloqueoVisibilidad = function (formContext) {
+      const mercado = formContext.getAttribute(dataForm.fields.mercadoAbierto).getValue();
+      const ownerOpportunity = formContext.getAttribute("ownerid").getValue()[0].id.toUpperCase();
+      const systemUserId = Xrm.Utility.getGlobalContext().userSettings.userId.toUpperCase();
+      return ownerOpportunity !== systemUserId && !mercado;
+    }
+
+    async function newNotification(message, level = 4) {
+      let notification = {
+        type: 1,
+        level, /* 1: Success   2: Error   3: Warning   4: Information */
+        message,
+        showCloseButton: true
+      };
+      const idNoti = await Xrm.App.addGlobalNotification(notification);
+      setTimeout(() => {
+        const noti = top.document.querySelector(`div[data-id="ToastNotification_${idNoti}"] p`)
+        if (noti) {
+          noti.style.fontSize = "16px";
+          noti.style.fontWeight = "600";
+        }
+      }, 100);
+    }
+
+    async function requestApiAuth(url, method = "GET", headers = null, body = null) {
+      let resReq = {};
+      let initReq = {
+        method: method,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json; charset=utf-8",
+          "OData-MaxVersion": "4.0",
+          "OData-Version": "4.0",
+          "Prefer": "odata.include-annotations=*"
+        }
+      };
+
+      if (body) {
+        initReq.body = typeof body === "string" ? body : JSON.stringify(body);
+      }
+      if (headers) {
+        //Headers personalizados
+        initReq.headers = headers
+      }
+
+      try {
+        const response = await window.fetch(url, initReq);
+        resReq.status = response.status;
+        resReq.ok = response.ok;
+        if (response.ok) {
+          try {
+            resReq.data = await response.json();
+          } catch {
+            resReq.data = response;
+          }
+        } else {
+          try {
+            resReq.error = await response.json();
+          } catch {
+            resReq.error = response;
+          }
+        }
+      } catch (error) {
+        resReq.status = 400;
+        resReq.ok = false;
+        resReq.error = error;
+      }
+      return resReq;
+    }
+
+    async function getENV() {
+      let reqEnv = await requestApiAuth("/api/data/v9.2/environmentvariablevalues?$select=value&$expand=EnvironmentVariableDefinitionId($select=schemaname)");
+      let dataEnv = reqEnv.data.value;
+      const findEnv = (nameEnv) => { return dataEnv.find(env => env.EnvironmentVariableDefinitionId.schemaname === nameEnv)?.value }
+      return {
+        clientIdOauthBio: findEnv("cxm_clientid_oauth_biometricos"),
+        clientIdSerenity: findEnv("cxm_clientid_serenity"),
+        clientIdStatusEnr: findEnv("cxm_clientid_status_enrolamiento"),
+        clientIdTokenOpaco: findEnv("cxm_clientid_token_opaco"),
+        clientSecretOauth: findEnv("cxm_clientsecret_oauth_biometricos"),
+        stdGlobalId: findEnv("cxm_std_global_id"),
+        urlOauth: findEnv("cxm_url_oauth_biometricos"),
+        urlStatus: findEnv("cxm_url_status_enrolamiento"),
+        urlTokenOpaco: findEnv("cxm_url_token_opaco"),
+        urlTokenSerenity: findEnv("cxm_url_token_serenity"),
+        urlVerify: findEnv("cxm_url_verify_enrolamiento"),
+        clientIdAuth: findEnv("cxm_clientid_auth"),
+        tenantAuth: findEnv("cxm_tenantid_auth"),
+        clientIdTokenApi: findEnv("cxm_claveid_api_std"),
+        urlChannelA: findEnv("cxm_url_channel_acc_std")
+      }
+    }
+
+    function getTransactionId(buc) {
+      const padStart = (number, length = 2) => { return number.toString().padStart(length, '0') }
+      const today = new Date();
+      return buc + today.getFullYear() + padStart(today.getMonth())
+        + padStart(today.getDay()) + padStart(today.getHours())
+        + padStart(today.getMinutes()) + padStart(today.getSeconds()) + padStart(today.getMilliseconds(), 3);
+    }
+
+    async function updateBiometricos(idIndicadores, flag) {
+      await requestApiAuth("/api/data/v9.2/cxm_mx_det_per_kpis(" + idIndicadores + ")", "PATCH", null, { cxm_biometrico: flag });
+      Xrm.Page.getAttribute("cxm_pcf_marcas").setValue(idIndicadores + Math.random());
+    }
+
+    Santander.BpfJS.DesbloquearFicha = async function (formContext) {
+      let _recordId = formContext.data.entity.getId();
+      _recordId = _recordId.replace("{", "").replace("}", "");
+
+      let pageInput = {
+        pageType: "custom",
+        name: dataForm.custompage.desbloqueoFicha,
+        recordId: _recordId,
+      };
+      let navigationOptions = {
+        target: 2,
+        height: { value: 275, unit: "px" },
+        width: { value: 500, unit: "px" },
+        position: 1,
+        title: dataForm.titles.desbloqueoOp
+      };
+      Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(
+        async function success(result) {
+          const idOpportunity = Xrm.Utility.getPageContext().input.entityId.replaceAll("{", "").replaceAll("}", "");
+          let opcionDesbloqueo = await Xrm.WebApi.online.retrieveRecord("opportunity", idOpportunity, "?$select=cxm_tipodesbloqueo");
+          await Xrm.WebApi.updateRecord("opportunity", idOpportunity, { "cxm_tipodesbloqueo": null });
+          if (opcionDesbloqueo.cxm_tipodesbloqueo === 1) {
+            Santander.BpfJS.DesbloquearFichaAutorizador(formContext);
+          }
+          if (opcionDesbloqueo.cxm_tipodesbloqueo === 2) {
+            Santander.BpfJS.validateBiometricos();
+          }
+        });
+    }
+
+    Santander.BpfJS.validateBiometricos = async function () {
+      let opportunityId = Xrm.Utility.getPageContext().input.entityId;
+      opportunityId = opportunityId.substring(1, opportunityId.length - 1);
+      const reqClient = await requestApiAuth("/api/data/v9.2/opportunities(" + opportunityId + ")?$select=_parentcontactid_value&$expand=parentcontactid($select=cxm_bucid)");
+      const userData = reqClient.data;
+      const envBiometricos = await getENV();
+      const activeBiometricos = await verifyActiveBiometricos(userData.parentcontactid.cxm_bucid, envBiometricos);
+
+      const reqToken = await requestApiAuth("/api/data/v9.2/cxm_APIsSTD", "POST", null, {
+        buc: "",
+        code: "",
+        authApi: "biometricos",
+        channelInfo: "",
+        scope: "oauth-token-management_1.0.0"
+      })
+      if (!reqToken.ok) {
+        newNotification("Problemas al llamar al servicio de biometricos, intente mÃ¡s tarde");
+        return true;
+      }
+      const tokenSerenity = JSON.parse(reqToken.data.dataOut).access_token;
+
+      const headerReqTokenO = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "x-ibm-client-id": envBiometricos.clientIdTokenOpaco,
+        "Authorization": `Bearer ${tokenSerenity}`,
+        "MsgRqHdr": JSON.stringify({ "UserId": "JAVI12", "ClientIPAddress": "USERIP", "ClientSessionId": "SESSIONID", "ClientId": "CLIENTID" })
+      }
+      const dataReqTokenOpaco = {
+        "SecObjInfo": {
+          "SecObjData": [
+            {
+              "SecObjDataKey": "ipUsuario",
+              "SecObjDataValue": "180.51.145.136",
+              "SecObjDataType": "STRING"
             },
-            timeline: "Timeline",
-
+            {
+              "SecObjDataKey": "UserId",
+              "SecObjDataValue": "N011046",
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "BUC",
+              "SecObjDataValue": userData.parentcontactid.cxm_bucid,
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "Num.Sucursal",
+              "SecObjDataValue": "1234",
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "Num.Terminal",
+              "SecObjDataValue": "1234",
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "Canal",
+              "SecObjDataValue": "01",
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "AppId",
+              "SecObjDataValue": "Reingenieria N4",
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "TransactionId",
+              "SecObjDataValue": getTransactionId(userData.parentcontactid.cxm_bucid),
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "EstatusPersona",
+              "SecObjDataValue": "NO ENROLADO",
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "TipoOperacion",
+              "SecObjDataValue": "VERIFICACION",
+              "SecObjDataType": "STRING"
+            },
+            {
+              "SecObjDataKey": "TipoOperacionApp",
+              "SecObjDataValue": "CMTC",
+              "SecObjDataType": "STRING"
+            }
+          ]
         }
+      };
+      const reqTokenO = await requestApiAuth(envBiometricos.urlTokenOpaco, "POST", headerReqTokenO, dataReqTokenOpaco)
 
-        // FunciÃƒÆ’Ã‚Â³n para setear el valor de referente a si el valor de llamar a es tipo contacto
-        // Autor: Rebeca Lizzet Galvan Benitez
-        // Fecha: 15 marzo 2023
-        // Modificacion: -- -- ----
-        Santander.Task.SetReferenteA = async function (executionContext) {
-            const formContext = executionContext.getFormContext();
+      if (reqTokenO.ok) {
+        const tokenOpaco = reqTokenO.data.SecObjRec.SecObjInfo.SecObjValue;
+        openFrameBioCheck(tokenOpaco, envBiometricos, activeBiometricos)
+      } else {
+        newNotification("Problemas al llamar al servicio de biometricos, intente mÃ¡s tarde");
+      }
 
-            let contactLlamarA = formContext.getAttribute(taskForm.fields.llamarA).getValue();
+    }
 
-            if (contactLlamarA.length > 0 && contactLlamarA[0].entityType === "contact")
-                formContext.getAttribute(taskForm.fields.referenteA).setValue(contactLlamarA);
-            else
-                formContext.getAttribute(taskForm.fields.referenteA).setValue(null);
+    async function verifyActiveBiometricos(bucVerify, envBiometricos) {
+      const reqIndicadores = await requestApiAuth(`/api/data/v9.2/cxm_mx_det_per_kpis?$select=cxm_mx_det_per_kpiid,cxm_biometrico&$filter=cxm_buc eq '${bucVerify}'`)
+      if (!reqIndicadores.ok) return false;
+      const indicadores = reqIndicadores.data.value[0];
+      if (indicadores?.cxm_biometrico) return true;
+
+      const headerReqToken = {
+        "Accept": "*/*",
+        "Content-Type": "application/x-www-form-urlencoded",
+      }
+      const dataReqToken = {
+        scope: "resources.all",
+        grant_type: "client_credentials",
+        client_id: envBiometricos.clientIdSerenity,
+        client_secret: envBiometricos.clientSecretOauth
+      }
+      const reqToken = await requestApiAuth(envBiometricos.urlOauth, "POST", headerReqToken, new URLSearchParams(dataReqToken).toString())
+      if (!reqToken.ok) return;
+
+      const headerReqEnr = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${reqToken.data.access_token}`,
+        "x-ibm-client-id": envBiometricos.clientIdStatusEnr,
+        "X-Santander-Global-Id": envBiometricos.stdGlobalId,
+      }
+      const bodyReqEnr = {
+        "transactionType": "1001",
+        "customerId": bucVerify,
+        "employeeId": "",
+        "channel": "12",
+        "branch": "1234",
+        "transactionId": getTransactionId(bucVerify)
+      }
+      const reqCheckEnr = await requestApiAuth(`${envBiometricos.urlStatus}?${new URLSearchParams(bodyReqEnr).toString()}`, "GET", headerReqEnr);
+      if (!reqCheckEnr.ok) return;
+
+      const dataStatus = reqCheckEnr.data;
+
+      if (dataStatus.enrollmentStatus === "ENROLADO") {
+        if (indicadores)
+          await updateBiometricos(indicadores.cxm_mx_det_per_kpiid, true);
+        return true;
+      };
+      return false;
+    }
+
+    function openFrameBioCheck(tokenOpaco, envBiometricos, activeBiometricos) {
+      const codesBiocheck = {
+        "OK00": "Terminada con Exito (OK)",
+        "OK0000": "VerificaciÃ³n Exitosa",
+        "CA000": "Se cancelo el proceso.",
+        "EAC01": "Error inesperado en API Customers",
+        "EAC02": "No hay conexiÃ³n con servicio de consulta en API Customers",
+        "EAC03": "El nÃºmero de cliente no es vÃ¡lido",
+        "EAPC00": "Campos faltantes para completar la operaciÃ³n",
+        "EAPC01": "Error inesperado en API Customers",
+        "EAPC02": "El nÃºmero de cliente no es vÃ¡lido, favor de verificarlo",
+        "EAPC03": "Error inesperado en API Customers por deserializaciÃ³n",
+        "EBC00": "No hay comunicaciÃ³n con el Biocheck Window Service",
+        "ECC00": "Error en Consulta BiomÃ©trica Inesperado",
+        "ECC01": "No hay conexiÃ³n con servicio de consulta Biometrica",
+        "EDC01": "Error en dispositivo de captura de huella",
+        "EDC02": "Error en dispositivo de captura de rostro",
+        "EDC03": "Error en dispositivo de captura de documentos",
+        "EEB00": "Error de Enrolamiento  Inesperado",
+        "EEB01": "Error de Enrolamiento porque no hay conexiÃ³n con el servicio de enrolamiento",
+        "EEB02": "El sujeto ya se encuentra enrolado biomÃ©tricamente",
+        "EEB03": "El usuario no se encuentra enrolado biomÃ©tricamente",
+        "EEXG00": "OcurriÃ³ un Error en la operaciÃ³n, favor de volver a intentarlo. Si el problema persiste, favor de comunicarse con el administrador del sistema.",
+        "EHTT204": "HTTP: NO CONTENT",
+        "EHTT400": "HTTP: BAD REQUEST",
+        "EHTT401": "HTTP: UNAUTHORIZED",
+        "EHTT403": "HTTP: FORBIDDEN",
+        "EHTT404": "HTTP: NOT FOUND",
+        "EHTT405": "HTTP: METHOD NOT ALLOWED",
+        "EHTT406": "HTTP: NOT ACCEPTABLE",
+        "EHTT409": "HTTP: CONFLICT",
+        "EHTT415": "HTTP: UNSUPPORTED MEDIA TYPE",
+        "EHTT500": "HTTP: INTERNAL SERVER ERROR",
+        "EHTT503": "HTTP: SERVICE TEMPORARILY UNAVAILABLE",
+        "ELB00": "Error inesperado en la lectura de licencias",
+        "ELB01": "Error porque no hay servicios de Escaner de documentos activos",
+        "ELB02": "Error porque no hay Licencias de Huella activas",
+        "ELB03": "Error porque no hay Licencias de Escaner de documentos activas",
+        "EOB00": "Se terminaron los intentos de captura de huellas.",
+        "EOB01": "Huellas no pudieron se capturadas por calidad insuficiente",
+        "EOB02": "Huella duplicadas durante la captura",
+        "EOB03": "No se pudo capturar el rostro",
+        "EOB04": "Credencial del INE ApÃ³crifa",
+        "EOB05": "Credencial del INE  No vigente",
+        "EOB06": "Credencial del INE No legible",
+        "EOB07": "No coincide el nombre y fecha de nacimiento de la identificaciÃ³n con 390",
+        "EOB08": "Credencial FM3 ApÃ³crifa",
+        "EOB09": "Credencial FM3 no vigente",
+        "EOTP00": "Campos faltantes para completar la operaciÃ³n de OTP",
+        "EOTP01": "No se pudo conseguir el OAUTH necesario para la operaciÃ³n de OTP",
+        "EPE6801": "BUC Invalido verifÃ­quelo y vuelva a intentarlo.",
+        "EPE6802": "Error en la consulta de PE68. CÃ³digo de estatus: ",
+        "ER5E.500": "Error en Consulta BiomÃ©trica Inesperado",
+        "ETO00": "Error inesperado en la validaciÃ³n del Token",
+        "ETO01": "Error de Token Opaco por ser invÃ¡lido",
+        "ETO02": "Error de Token Opaco por estar caducado",
+        "ETO03": "Error de Token Opaco porque no existe",
+        "ETO04": "Error de Token Opaco porque estÃ¡ duplicado",
+        "ETO05": "Error de Token Opaco porque los datos son invÃ¡lidos",
+        "ETO06": "No se recibiÃ³ token opaco.",
+        "ETOG01": "No se pudo conseguir el OAUTH necesario para la operaciÃ³n de Token Opaco",
+        "ETOG02": "Error inespeerado en Token",
+        "ETOG03": "Error HTTP",
+        "ETOK00": "Campos faltantes para completar la operaciÃ³n de Token Opaco",
+        "ETOK01": "No se pudo conseguir el OAUTH necesario para la operaciÃ³n de Token Opaco",
+        "ETOV03": "Error HTTP",
+        "EVB00": "Error de VerificaciÃ³n Inesperado",
+        "EVB01": "El sujeto no se encuentra enrolado biomÃ©tricamente",
+        "EVB02": "Error de conexiÃ³n con el servicio de verificaciÃ³n de API Connect",
+        "EVD01": "CURP no vÃ¡lido en la RENAPO",
+        "EVD02": "OCR/CIC no vÃ¡lido en INE",
+        "EVD03": "Huellas no vÃ¡lidas en INE",
+        "EVD04": "Nombre registrado no coincide con el capturado",
+        "EVD05": "Error inesperado con servicio de INE de API Connect",
+        "EVD06": "No hay conexiÃ³n con servicio de RENAPO de API Connect",
+        "EVD07": "Error inesperado con servicio de RENAPO de API Connect",
+        "PRC00": "Enrolamiento  en proceso",
+        "OK0003": "VERIFICACION NO EXITOSA"
+      }
+      const windowBiometricos = window.open('', '_blank', 'width=1000,height=850,toolbar=no,location=no');
+      windowBiometricos.document.write(`
+        <title>Biocheck</title>
+        <iframe width="950" height="800" id="iframeBiometricos" title='iframeBiometricos' src=''></iframe>
+      `)
+      const iframe = windowBiometricos.document.getElementById("iframeBiometricos");
+      iframe.src = activeBiometricos ? envBiometricos.urlVerify : envBiometricos.urlVerify + "VentanillaINE";
+      iframe.title = "Biocheck"
+      windowBiometricos.addEventListener("message", (e) => {
+        iframe.contentWindow.postMessage(tokenOpaco, "*");
+        if (typeof e.data === "string") {
+          const code = JSON.parse(e.data).code;
+          const message = code + ": " + (codesBiocheck[code] ?? "Sin informaciÃ³n del cÃ³digo de error");
+          if (code[0] === "O" && code !== "OK0003") {
+            newNotification(message, 1);
+            formContext.data.process.removeOnPreStageChange(handleBlockChangeStage);
+            Xrm.Navigation.openAlertDialog({
+              text: "VerificaciÃ³n exitosa. Ya puedes gestionar esta oportunidad.",
+              title: dataForm.titles.desbloqueoOp
+            });
+            top.document.querySelector('[data-id*="cxm.opportunity.Desbloqueo"]').style.display = "none";
+          } else if (code[0] === "P") {
+            newNotification(message, 4);
+          } else {
+            newNotification(message, 2);
+          }
+          windowBiometricos.close();
         }
+      })
+    }
 
-        Santander.Task.ShowhideSubgridContactabilidad = async function (executionContext) {
-            let formContext = executionContext.getFormContext();// get the form Context ontiene toda la informaciÃƒÂ³n del formulario.
-            let subject = formContext.getAttribute("subject").getValue();// get the value of accountname obtiene
-            let medioContacto = subject.split(' ').slice(-1)[0]; // obtener la ÃƒÂºltima palabra de asunto.
+    Santander.BpfJS.ConsultarDirectorSubdirectorSucursal = async function (idSucursal) {
+      const originalFetchXML = `<fetch>
+        <entity name="cxm_mx_cat_usu_arbol_oficial">
+          <attribute name="cxm_modulo_sucursalid" />
+          <attribute name="cxm_usuarioid" />
+          <attribute name="cxm_tipooficialid" />
+          <filter type="and">
+            <condition attribute="cxm_modulo_sucursalid" operator="eq" value="`+ idSucursal + `" uitype="cxm_mx_cat_usu_modulo" />
+          </filter>
+          <link-entity name="systemuser" from="systemuserid" to="cxm_usuarioid" />
+          <link-entity name="cxm_mx_cat_usu_tip_oficial" from="cxm_mx_cat_usu_tip_oficialid" to="cxm_tipooficialid">
+            <filter>
+              <condition attribute="cxm_codigo" operator="in">
+                <value>1</value>
+                <value>12</value>
+              </condition>
+            </filter>
+          </link-entity>
+        </entity>
+      </fetch>`;
+      let escapedFetchXML = encodeURIComponent(originalFetchXML);
 
-            if (medioContacto == "CITA") {
+      return await fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_mx_cat_usu_arbol_oficials?fetchXml=" + escapedFetchXML, {
+        method: "GET",
+        headers: {
+          "OData-MaxVersion": "4.0",
+          "OData-Version": "4.0",
+          "Content-Type": "application/json; charset=utf-8",
+          "Accept": "application/json",
+          "Prefer": "odata.include-annotations=*"
+        }
+      }).then(
+        function success(response) {
+          return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
+        }
+      ).then(function (responseObjects) {
+        let responseBody = responseObjects[1];
+        let result = responseBody;
+        return result;
+      }).catch(function (error) {
+        console.log(error.message);
+      });
+    }
 
-                formContext.getControl('grid_cita').setVisible(true);//Show Subgrid
-                formContext.getControl('grid_correo').setVisible(false);//Hide Subgrid
-                formContext.getControl('grid_llamada_sms').setVisible(false);//Hide Subgrid
-                formContext.getControl('grid_visita').setVisible(false);//Hide Subgrid
-
-            }
-            else if (medioContacto == "VISITA") {
-                formContext.getControl('grid_cita').setVisible(false);
-                formContext.getControl('grid_correo').setVisible(false);
-                formContext.getControl('grid_llamada_sms').setVisible(false);
-                formContext.getControl('grid_visita').setVisible(true);
-
-            }
-            else if (medioContacto == "EMAIL") {
-                formContext.getControl('grid_cita').setVisible(false);
-                formContext.getControl('grid_correo').setVisible(true);
-                formContext.getControl('grid_llamada_sms').setVisible(false);
-                formContext.getControl('grid_visita').setVisible(false);
-            }
-            else if (medioContacto == "SMS") {
-                formContext.getControl('grid_cita').setVisible(false);
-                formContext.getControl('grid_correo').setVisible(false);
-                formContext.getControl('grid_llamada_sms').setVisible(true);
-                formContext.getControl('grid_visita').setVisible(false);
-            }
-            else if (medioContacto == "LLAMADA") {
-                formContext.getControl('grid_cita').setVisible(false);
-                formContext.getControl('grid_correo').setVisible(false);
-                formContext.getControl('grid_llamada_sms').setVisible(true);
-                formContext.getControl('grid_visita').setVisible(false);
+    Santander.BpfJS.DesbloquearFichaAutorizador = async function (formContext) {
+      let opportunityId = Xrm.Utility.getPageContext().input.entityId;
+      opportunityId = opportunityId.substring(1, opportunityId.length - 1);
+      let idEjecutivo = Xrm.Utility.getGlobalContext().userSettings.userId.replace("{", "").replace("}", "");
+      try {
+        const opportunityReq = await Xrm.WebApi.retrieveRecord("opportunity", opportunityId, "?$select=_cxm_usuariopermisoid_value,cxm_solicitudaprobacion")
+        if (opportunityReq._cxm_usuariopermisoid_value == null && !opportunityReq.cxm_solicitudaprobacion) {
+          const reqArbolOf = await Xrm.WebApi.online.retrieveMultipleRecords("cxm_mx_cat_usu_arbol_oficial", "?$select=_cxm_moduloid_value,_cxm_regionid_value,_cxm_modulo_sucursalid_value,_cxm_zonaid_value&$expand=cxm_regionid($select=cxm_codigo)&$filter=_cxm_usuarioid_value eq " + idEjecutivo)
+          if (reqArbolOf.entities[0]?._cxm_modulo_sucursalid_value) {
+            let sucursal = reqArbolOf.entities[0]?._cxm_modulo_sucursalid_value;
+            let director_subdirector = await Santander.BpfJS.ConsultarDirectorSubdirectorSucursal(sucursal);
+            if (director_subdirector?.value.length > 0) {
+              await Xrm.WebApi.updateRecord("opportunity", opportunityId, { "cxm_solicitudaprobacion": true })
+              Xrm.Navigation.openAlertDialog({
+                text: "Solicitud enviada. Espere un momento para recibir la aprobaciÃ³n.",
+                title: dataForm.titles.desbloqueoOp
+              });
+              let respondido = false;
+              let Esperando = setInterval(async () => {
+                const reqOpporSol = await Xrm.WebApi.retrieveRecord("opportunity", opportunityId, "?$select=_cxm_usuariopermisoid_value,cxm_solicitudaprobacion")
+                if (!reqOpporSol.cxm_solicitudaprobacion && !respondido) {
+                  respondido = true;
+                  clearInterval(Esperando);
+                  if (reqOpporSol._cxm_usuariopermisoid_value != null) {
+                    formContext.data.process.removeOnPreStageChange(handleBlockChangeStage);
+                    Xrm.Navigation.openAlertDialog({
+                      text: "Solicitud aprobada. Ya puedes gestionar esta oportunidad.",
+                      title: dataForm.titles.desbloqueoOp
+                    });
+                    await Xrm.WebApi.updateRecord("opportunity", opportunityId, { "cxm_usuariopermisoid@odata.bind": null })
+                    top.document.querySelector('[data-id*="cxm.opportunity.Desbloqueo"]').style.display = "none";
+                  } else {
+                    Xrm.Navigation.openAlertDialog({
+                      text: "Solicitud denegada o supero el tiempo de espera",
+                      title: dataForm.titles.desbloqueoOp
+                    });
+                  }
+                }
+              }, 5000);
             }
             else {
-                formContext.getControl('grid_cita').setVisible(false);
-                formContext.getControl('grid_correo').setVisible(false);
-                formContext.getControl('grid_llamada_sms').setVisible(false);
-                formContext.getControl('grid_visita').setVisible(false);
+              alert("No existe un director o subdirector para la sucursal en la que esta el ejecutivo");
             }
-
+          } else {
+            alert("No pertenece a ninguna sucursal para realizar la solicitud");
+          }
+        } else {
+          Xrm.Navigation.openAlertDialog({
+            text: "Actualmente un ejecutivo tiene desbloqueada la oportunidad o tiene una solicitud pendiente",
+            title: dataForm.titles.desbloqueoOp
+          });
         }
+      } catch (error) {
+        alert("Error al procesar la solicitud de desbloqueo")
+      }
 
-        Santander.Task.FichaClienteAC = async function (executionContext) {
-            const formContext = executionContext.getFormContext();
-            const dataEje = Xrm.Utility.getGlobalContext().userSettings;
-            const usuarioid = dataEje.userId.substring(1, dataEje.userId.length - 1);
-            let clienteid = formContext.data.entity.getId();
-            let nombreCliente = formContext.getAttribute(taskForm.fields.nombreCliente).getValue();
-            let buc = formContext.getAttribute(taskForm.fields.buc).getValue();
-            let tipoOption = 1;
-            // Parameters
-            fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_AuditoriaFichaCliente", {
-                method: "POST",
-                headers: {
-                    "OData-MaxVersion": "4.0",
-                    "OData-Version": "4.0",
-                    "Content-Type": "application/json; charset=utf-8",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({
-                    nombreCliente,
-                    usuarioid,
-                    clienteid,
-                    texto: "visualizo la ficha del cliente ",
-                    buc,
-                    tipoOption
-                })
-            }).then(
-                function success(response) {
-                    return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
-                }
-            ).then(function (responseObjects) {
-                let response = responseObjects[0];
-                let responseBody = responseObjects[1];
-                let result = responseBody;
-                let status = result["status"]; // Edm.String
-                if(status.Id){
-                    // Refrescar timeline
-                    formContext.getControl(taskForm.fields.timeline).refresh();
-                }
-            }).catch(function (error) {
-                console.log(error.message);
-            })
-        }
-        Santander.Task.gestionarACC = async function (executionContext) {
-            const formContext = executionContext.getFormContext();
-            const dataEje = Xrm.Utility.getGlobalContext().userSettings;
-            const usuarioid = dataEje.userId.substring(1, dataEje.userId.length - 1);
-            let clienteid = formContext.data.entity.getId();
-            let nombreCliente = formContext.getAttribute(taskForm.fields.nombreCliente).getValue();
-            let buc = formContext.getAttribute(taskForm.fields.buc).getValue();
-            let tipoOption = 1;
-            // Parameters
-            fetch(Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/cxm_AuditoriaFichaCliente", {
-                method: "POST",
-                headers: {
-                    "OData-MaxVersion": "4.0",
-                    "OData-Version": "4.0",
-                    "Content-Type": "application/json; charset=utf-8",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({
-                    nombreCliente,
-                    usuarioid,
-                    clienteid,
-                    texto: "visualizÃ³ las ACC del cliente ",
-                    buc,
-                    tipoOption
-                })
-            }).then(
-                function success(response) {
-                    return response.json().then((json) => { if (response.ok) { return [response, json]; } else { throw json.error; } });
-                }
-            ).then(function (responseObjects) {
-                let response = responseObjects[0];
-                let responseBody = responseObjects[1];
-                let result = responseBody;
-                let status = result["status"]; // Edm.String
-                if(status.Id){
-                    // Refrescar timeline
-                    formContext.getControl(taskForm.fields.timeline).refresh();
-                }
-            }).catch(function (error) {
-                console.log(error.message);
-            })
-        }
+    }
 
-    })(Task = Santander.Task || (Santander.Task = {}));
+    Santander.BpfJS.desbloquearOportunidadBiometricos = async function () {
+      Xrm.Navigation.openAlertDialog({
+        text: "Se va iniciar la verificaciÃ³n de biometricos",
+        title: dataForm.titles.desbloqueoOp
+      }).then(() => {
+        Santander.BpfJS.validateBiometricos();
+      });
+    }
+
+    Santander.BpfJS.onChangeTipoGestion = function (executionContext) {
+      const fc = executionContext.getFormContext();
+      fc.getAttribute(dataForm.fields.fechaContratacion).setValue(new Date());
+    }
+
+    Santander.BpfJS.onFechaContratacion = function (executionContext) {
+      const fc = executionContext.getFormContext();
+      const tipoGestion = fc.getAttribute(dataForm.fields.tipoGestion).getValue();
+      const fechaContratacion = fc.getAttribute(dataForm.fields.fechaContratacion);
+      if (tipoGestion === 2) { // 1 gestionar
+        if(fechaContratacion.getValue()){
+          const date = new Date(new Date().toISOString().split("T")[0]);
+          const dateFC = new Date(fechaContratacion.getValue());
+          if (dateFC < date) {
+            fechaContratacion.setValue(null);
+            fc.ui.setFormNotification("No se permiten seleccionar fechas anteriores a hoy", "WARNING", "wfc");
+          }
+          else {
+            fc.ui.clearFormNotification("wfc");
+          }
+        }
+        
+      }
+    }
+
+  })(BpfJS = Santander.BpfJS || (Santander.BpfJS = {}));
 })(window.Santander = window.Santander || {});
