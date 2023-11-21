@@ -1,1 +1,39 @@
+function manejarDependencias() {
+    // Obtiene el contexto del formulario
+    var formContext = executionContext.getFormContext();
 
+    // Obtiene el control del campo principal
+    var campoPrincipal = formContext.getAttribute("nombre_campo_principal");
+
+    // Obtiene el valor actual del campo principal
+    var valorCampoPrincipal = campoPrincipal.getValue();
+
+    // Obtiene el control del campo secundario
+    var campoSecundario = formContext.getAttribute("nombre_campo_secundario");
+
+    // Oculta todas las opciones en el segundo campo
+    campoSecundario.controls.forEach(function (control) {
+        control.setVisible(false);
+    });
+
+    // Lógica para mostrar/ocultar opciones en el segundo campo
+    if (valorCampoPrincipal === "si") {
+        // Muestra las opciones 1 y 2
+        campoSecundario.controls.get(0).setVisible(true); // Índice de la opción 1
+        campoSecundario.controls.get(1).setVisible(true); // Índice de la opción 2
+    } else if (valorCampoPrincipal === "tal vez") {
+        // Muestra las opciones 3 y 4
+        campoSecundario.controls.get(2).setVisible(true); // Índice de la opción 3
+        campoSecundario.controls.get(3).setVisible(true); // Índice de la opción 4
+    } else if (valorCampoPrincipal === "no") {
+        // Muestra las opciones 5 y 6
+        campoSecundario.controls.get(4).setVisible(true); // Índice de la opción 5
+        campoSecundario.controls.get(5).setVisible(true); // Índice de la opción 6
+    }
+
+    // Suscribe al evento onChange del campo principal
+    campoPrincipal.addOnChange(manejarDependencias);
+}
+
+// Llamada inicial para establecer las dependencias al cargar el formulario
+manejarDependencias();
