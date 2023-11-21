@@ -1,15 +1,9 @@
 function manejarDependencias() {
-    // Obtiene el contexto del formulario
-    var formContext = executionContext.getFormContext();
-
-    // Obtiene el control del campo principal
-    var campoPrincipal = formContext.getAttribute("nombre_campo_principal");
-
     // Obtiene el valor actual del campo principal
-    var valorCampoPrincipal = campoPrincipal.getValue();
+    var valorCampoPrincipal = Xrm.Page.getAttribute("nombre_campo_principal").getValue();
 
     // Obtiene el control del campo secundario
-    var campoSecundario = formContext.getAttribute("nombre_campo_secundario");
+    var campoSecundario = Xrm.Page.getAttribute("nombre_campo_secundario");
 
     // Oculta todas las opciones en el segundo campo
     campoSecundario.controls.forEach(function (control) {
@@ -32,7 +26,7 @@ function manejarDependencias() {
     }
 
     // Suscribe al evento onChange del campo principal
-    campoPrincipal.addOnChange(manejarDependencias);
+    Xrm.Page.getAttribute("nombre_campo_principal").addOnChange(manejarDependencias);
 }
 
 // Llamada inicial para establecer las dependencias al cargar el formulario
