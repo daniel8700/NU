@@ -1,24 +1,21 @@
-        public (string, string) GetArbolOficial(Guid usuarioId)
-        {
-            string query = $@"<fetch top='1' no-lock='true'>
-                              <entity name='cxm_mx_cat_usu_arbol_oficial'>
-                                <attribute name='cxm_claveoficial' />
-                                <filter>
-                                  <condition attribute='cxm_usuarioid' operator='eq' value='{usuarioId}' />
-                                </filter>
-                                <link-entity name='systemuser' from='systemuserid' to='cxm_usuarioid' alias='usuario'>
-                                  <attribute name='fullname' />
-                                </link-entity>
-                              </entity>
-                            </fetch>";
+public (string, string) GetArbolOficial(Guid usuarioId)
+{
+    string query = $@"<fetch top='1' no-lock='true'>
+                      <entity name='systemuser'>
+                        <attribute name='fullname' />
+                        <filter>
+                          <condition attribute='systemuserid' operator='eq' value='{usuarioId}' />
+                        </filter>
+                      </entity>
+                    </fetch>";
 
-            EntityCollection collection = _cnx.service.RetrieveMultiple(new FetchExpression(query));
+    EntityCollection collection = _cnx.service.RetrieveMultiple(new FetchExpression(query));
 
-            if (collection != null && collection.Entities.Any())
-            {
-                Entity entity = collection.Entities.FirstOrDefault();
-                return (entity.GetStringValue(cxm_mx_cat_usu_arbol_oficial.Fields.cxm_claveoficial), entity.GetAliasedStringValue("usuario.fullname"));
-            }
-            else
-                return (string.Empty, string.Empty);
-        }
+    if (collection != null && collection.Entities.Any())
+    {
+        Entity entity = collection.Entities.FirstOrDefault();
+        return (usuarioId.ToString(), entity.GetAliasedStringValue("fullname"));
+    }
+    else
+        return (string.Empty, string.Empty);
+}
