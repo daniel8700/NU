@@ -1,33 +1,24 @@
-function manejarDependencias() {
-    // Obtiene el valor actual del campo principal
-    var valorCampoPrincipal = Xrm.Page.getAttribute("nombre_campo_principal").getValue();
+        public (string, string) GetArbolOficial(Guid usuarioId)
+        {
+            string query = $@"<fetch top='1' no-lock='true'>
+                              <entity name='cxm_mx_cat_usu_arbol_oficial'>
+                                <attribute name='cxm_claveoficial' />
+                                <filter>
+                                  <condition attribute='cxm_usuarioid' operator='eq' value='{usuarioId}' />
+                                </filter>
+                                <link-entity name='systemuser' from='systemuserid' to='cxm_usuarioid' alias='usuario'>
+                                  <attribute name='fullname' />
+                                </link-entity>
+                              </entity>
+                            </fetch>";
 
-    // Obtiene el control del campo secundario
-    var campoSecundario = Xrm.Page.getAttribute("nombre_campo_secundario");
+            EntityCollection collection = _cnx.service.RetrieveMultiple(new FetchExpression(query));
 
-    // Oculta todas las opciones en el segundo campo
-    campoSecundario.controls.forEach(function (control) {
-        control.setVisible(false);
-    });
-
-    // Lógica para mostrar/ocultar opciones en el segundo campo
-    if (valorCampoPrincipal === "si") {
-        // Muestra las opciones 1 y 2
-        campoSecundario.controls.get(0).setVisible(true); // Índice de la opción 1
-        campoSecundario.controls.get(1).setVisible(true); // Índice de la opción 2
-    } else if (valorCampoPrincipal === "tal vez") {
-        // Muestra las opciones 3 y 4
-        campoSecundario.controls.get(2).setVisible(true); // Índice de la opción 3
-        campoSecundario.controls.get(3).setVisible(true); // Índice de la opción 4
-    } else if (valorCampoPrincipal === "no") {
-        // Muestra las opciones 5 y 6
-        campoSecundario.controls.get(4).setVisible(true); // Índice de la opción 5
-        campoSecundario.controls.get(5).setVisible(true); // Índice de la opción 6
-    }
-
-    // Suscribe al evento onChange del campo principal
-    Xrm.Page.getAttribute("nombre_campo_principal").addOnChange(manejarDependencias);
-}
-
-// Llamada inicial para establecer las dependencias al cargar el formulario
-manejarDependencias();
+            if (collection != null && collection.Entities.Any())
+            {
+                Entity entity = collection.Entities.FirstOrDefault();
+                return (entity.GetStringValue(cxm_mx_cat_usu_arbol_oficial.Fields.cxm_claveoficial), entity.GetAliasedStringValue("usuario.fullname"));
+            }
+            else
+                return (string.Empty, string.Empty);
+        }
