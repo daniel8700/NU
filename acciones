@@ -1,15 +1,15 @@
-string perInputparameters = context.InputParameters["usuarioid"]?.ToString();
-string cliInputparameters = context.InputParameters["clienteid"]?.ToString();
-string nameInputparameters = context.InputParameters["nombreCliente"]?.ToString();
-string visualizoInputparameters = context.InputParameters["texto"]?.ToString();
-string optionInputparameters = context.InputParameters["tipoOption"]?.ToString();
+object perInputObject = context.InputParameters["usuarioid"];
+object cliInputObject = context.InputParameters["clienteid"];
+object nameInputObject = context.InputParameters["nombreCliente"];
+object visualizoInputObject = context.InputParameters["texto"];
+object optionInputObject = context.InputParameters["tipoOption"];
 
 // Validar y convertir solo si los valores no son nulos
-perInputparameters = perInputparameters ?? string.Empty;
-cliInputparameters = cliInputparameters ?? string.Empty;
-nameInputparameters = nameInputparameters ?? string.Empty;
-visualizoInputparameters = visualizoInputparameters ?? string.Empty;
-optionInputparameters = optionInputparameters ?? string.Empty;
+string perInputparameters = perInputObject != null ? perInputObject.ToString() : string.Empty;
+string cliInputparameters = cliInputObject != null ? cliInputObject.ToString() : string.Empty;
+string nameInputparameters = nameInputObject != null ? nameInputObject.ToString() : string.Empty;
+string visualizoInputparameters = visualizoInputObject != null ? visualizoInputObject.ToString() : string.Empty;
+string optionInputparameters = optionInputObject != null ? optionInputObject.ToString() : string.Empty;
 
 // Proceder con las conversiones y el procesamiento
 cxm_mx_hst_per_fichacliente dataFC = _processor.SetInfoEjecutivoAFichaCliente(
