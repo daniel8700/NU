@@ -21,3 +21,26 @@ cxm_mx_hst_per_fichacliente dataFC = _processor.SetInfoEjecutivoAFichaCliente(
 );
 
 cxm_mx_mst_acc_interaccion dataIN = _processor.SetInteraccion(nameInputparameters, Guid.Parse(cliInputparameters));
+//////////////////////////////////////////////
+  {
+                tracingService.Trace("Inicio CrearActividadFC Auditoría.");
+                ServerConnection _cnx = new ServerConnection(serviceProvider);
+                AssetsRepository _repository = new AssetsRepository(_cnx);
+                AssetsProcessor _processor = new AssetsProcessor(_repository);
+
+                string perInputparameters = context.InputParameters["usuarioid"].ToString();
+                string cliInputparameters = context.InputParameters["clienteid"].ToString();
+                string nameInputparameters = context.InputParameters["nombreCliente"].ToString();
+                string visualizoInputparameters = context.InputParameters["texto"].ToString();
+                string optionInputparameters = context.InputParameters["tipoOption"].ToString();
+                string asuntoInputparameters = context.InputParameters["asunto"].ToString();
+                string etapaInputparameters = context.InputParameters["etapaBPF"].ToString();
+
+                // The InputParameters collection contains all the data passed in the message request.  
+                tracingService.Trace("lectura de inpunts exitoso");
+                cxm_mx_hst_per_fichacliente dataFC = _processor.SetInfoEjecutivoAFichaCliente(Guid.Parse(perInputparameters), Guid.Parse(cliInputparameters), nameInputparameters, visualizoInputparameters, optionInputparameters, asuntoInputparameters, etapaInputparameters);
+                cxm_mx_mst_acc_interaccion dataIN = _processor.SetInteraccion(nameInputparameters, Guid.Parse(cliInputparameters));
+
+
+                context.OutputParameters.AddOrUpdateIfNotNull("status", JsonConvert.SerializeObject(dataFC));
+            }
