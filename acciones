@@ -1,10 +1,23 @@
-                string perInputparameters = context.InputParameters["usuarioid"].ToString();
-                string cliInputparameters = context.InputParameters["clienteid"].ToString();
-                string nameInputparameters = context.InputParameters["nombreCliente"].ToString();
-                string visualizoInputparameters = context.InputParameters["texto"].ToString();
-                string optionInputparameters = context.InputParameters["tipoOption"].ToString();
+string perInputparameters = context.InputParameters["usuarioid"]?.ToString();
+string cliInputparameters = context.InputParameters["clienteid"]?.ToString();
+string nameInputparameters = context.InputParameters["nombreCliente"]?.ToString();
+string visualizoInputparameters = context.InputParameters["texto"]?.ToString();
+string optionInputparameters = context.InputParameters["tipoOption"]?.ToString();
 
-                // The InputParameters collection contains all the data passed in the message request.  
+// Validar y convertir solo si los valores no son nulos
+perInputparameters = perInputparameters ?? string.Empty;
+cliInputparameters = cliInputparameters ?? string.Empty;
+nameInputparameters = nameInputparameters ?? string.Empty;
+visualizoInputparameters = visualizoInputparameters ?? string.Empty;
+optionInputparameters = optionInputparameters ?? string.Empty;
 
-                cxm_mx_hst_per_fichacliente dataFC = _processor.SetInfoEjecutivoAFichaCliente(Guid.Parse(perInputparameters), Guid.Parse(cliInputparameters), nameInputparameters, visualizoInputparameters, optionInputparameters);
-                cxm_mx_mst_acc_interaccion dataIN = _processor.SetInteraccion(nameInputparameters, Guid.Parse(cliInputparameters));
+// Proceder con las conversiones y el procesamiento
+cxm_mx_hst_per_fichacliente dataFC = _processor.SetInfoEjecutivoAFichaCliente(
+    Guid.Parse(perInputparameters),
+    Guid.Parse(cliInputparameters),
+    nameInputparameters,
+    visualizoInputparameters,
+    optionInputparameters
+);
+
+cxm_mx_mst_acc_interaccion dataIN = _processor.SetInteraccion(nameInputparameters, Guid.Parse(cliInputparameters));
