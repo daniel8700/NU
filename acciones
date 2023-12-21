@@ -1,46 +1,25 @@
-object perInputObject = context.InputParameters["usuarioid"];
-object cliInputObject = context.InputParameters["clienteid"];
-object nameInputObject = context.InputParameters["nombreCliente"];
-object visualizoInputObject = context.InputParameters["texto"];
-object optionInputObject = context.InputParameters["tipoOption"];
+En el contexto de Dynamics 365, puedes utilizar el objeto `Xrm` para obtener el usuario actual y compararlo con el `ownerid` del registro. Aquí te dejo un ejemplo:
 
-// Validar y convertir solo si los valores no son nulos
-string perInputparameters = perInputObject != null ? perInputObject.ToString() : string.Empty;
-string cliInputparameters = cliInputObject != null ? cliInputObject.ToString() : string.Empty;
-string nameInputparameters = nameInputObject != null ? nameInputObject.ToString() : string.Empty;
-string visualizoInputparameters = visualizoInputObject != null ? visualizoInputObject.ToString() : string.Empty;
-string optionInputparameters = optionInputObject != null ? optionInputObject.ToString() : string.Empty;
+```javascript
+function esPropietarioActual() {
+    // Obtener el contexto del formulario
+    var formContext = Xrm.Page;
 
-// Proceder con las conversiones y el procesamiento
-cxm_mx_hst_per_fichacliente dataFC = _processor.SetInfoEjecutivoAFichaCliente(
-    Guid.Parse(perInputparameters),
-    Guid.Parse(cliInputparameters),
-    nameInputparameters,
-    visualizoInputparameters,
-    optionInputparameters
-);
+    // Obtener el ownerid del registro
+    var owneridRegistro = formContext.getAttribute("ownerid").getValue();
 
-cxm_mx_mst_acc_interaccion dataIN = _processor.SetInteraccion(nameInputparameters, Guid.Parse(cliInputparameters));
-//////////////////////////////////////////////
-  {
-                tracingService.Trace("Inicio CrearActividadFC Auditoría.");
-                ServerConnection _cnx = new ServerConnection(serviceProvider);
-                AssetsRepository _repository = new AssetsRepository(_cnx);
-                AssetsProcessor _processor = new AssetsProcessor(_repository);
+    // Obtener el usuario actual
+    var usuarioActual = Xrm.Utility.getGlobalContext().userSettings.userId;
 
-                string perInputparameters = context.InputParameters["usuarioid"].ToString();
-                string cliInputparameters = context.InputParameters["clienteid"].ToString();
-                string nameInputparameters = context.InputParameters["nombreCliente"].ToString();
-                string visualizoInputparameters = context.InputParameters["texto"].ToString();
-                string optionInputparameters = context.InputParameters["tipoOption"].ToString();
-                string asuntoInputparameters = context.InputParameters["asunto"].ToString();
-                string etapaInputparameters = context.InputParameters["etapaBPF"].ToString();
+    // Comparar el ownerid con el usuario actual
+    return owneridRegistro && owneridRegistro[0].id === usuarioActual;
+}
 
-                // The InputParameters collection contains all the data passed in the message request.  
-                tracingService.Trace("lectura de inpunts exitoso");
-                cxm_mx_hst_per_fichacliente dataFC = _processor.SetInfoEjecutivoAFichaCliente(Guid.Parse(perInputparameters), Guid.Parse(cliInputparameters), nameInputparameters, visualizoInputparameters, optionInputparameters, asuntoInputparameters, etapaInputparameters);
-                cxm_mx_mst_acc_interaccion dataIN = _processor.SetInteraccion(nameInputparameters, Guid.Parse(cliInputparameters));
+// Ejemplo de uso
+var resultado = esPropietarioActual();
 
+// 'resultado' ahora contiene true si son iguales, false si no lo son
+console.log(resultado);
+```
 
-                context.OutputParameters.AddOrUpdateIfNotNull("status", JsonConvert.SerializeObject(dataFC));
-            }
+Este código asume que estás trabajando en el contexto de un formulario de Dynamics 365 y que tienes un campo llamado "ownerid". Asegúrate de ajustar el código según tus necesidades y la configuración específica de tu entidad en Dynamics 365.
