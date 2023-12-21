@@ -1,14 +1,9 @@
-function esPropietarioActual() {
-    // Obtener el propietario actual del registro
-    var owneridRegistro = Xrm.Page.getAttribute("ownerid").getValue();
-
-    // Obtener el ID del usuario actual
-    var usuarioActual = Xrm.Utility.getGlobalContext().userSettings.userId;
-
-    // Comparar el ownerid con el usuario actual y habilitar/deshabilitar el botón
-    if (owneridRegistro && owneridRegistro[0].id === usuarioActual) {
-        return true; // Habilitar el botón
-    } else {
-        return false; // Deshabilitar el botón
-    }
-}
+let tutela = JSON.parse(sessionStorage.getItem("cxm_tutela"));
+        //if (tutela.tutela) {
+          Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(function () { }).catch(function (error) { Santander.Contact.AppInsightsException(error); });
+        //}
+        /*else {
+          var alertStrings = { confirmButtonLabel: "Aceptar", text: "No puedes crear contactos relacionados, no cuentas con permisos suficientes", title: "Contactos Relacionados" };
+          var alertOptions = { height: 120, width: 260 };
+          Xrm.Navigation.openAlertDialog(alertStrings, alertOptions);*/
+        //}
