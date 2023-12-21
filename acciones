@@ -5,6 +5,10 @@ function esPropietarioActual() {
     // Obtener el ID del usuario actual
     var usuarioActual = Xrm.Utility.getGlobalContext().userSettings.userId;
 
-    // Comparar el ownerid con el usuario actual
-    return owneridRegistro && owneridRegistro[0].id === usuarioActual;
+    // Comparar el ownerid con el usuario actual y habilitar/deshabilitar el botón
+    if (owneridRegistro && owneridRegistro[0].id === usuarioActual) {
+        return true; // Habilitar el botón
+    } else {
+        return false; // Deshabilitar el botón
+    }
 }
