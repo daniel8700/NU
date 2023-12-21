@@ -1,9 +1,7 @@
-let tutela = JSON.parse(sessionStorage.getItem("cxm_tutela"));
-        //if (tutela.tutela) {
-          Xrm.Navigation.navigateTo(pageInput, navigationOptions).then(function () { }).catch(function (error) { Santander.Contact.AppInsightsException(error); });
-        //}
-        /*else {
-          var alertStrings = { confirmButtonLabel: "Aceptar", text: "No puedes crear contactos relacionados, no cuentas con permisos suficientes", title: "Contactos Relacionados" };
-          var alertOptions = { height: 120, width: 260 };
-          Xrm.Navigation.openAlertDialog(alertStrings, alertOptions);*/
-        //}
+function verificarTutela() {
+    // Recuperar el objeto tutela del sessionStorage
+    let tutela = JSON.parse(sessionStorage.getItem("cxm_tutela"));
+
+    // Verificar si la propiedad tutela existe y es verdadera
+    return tutela && tutela.tutela === true;
+}
