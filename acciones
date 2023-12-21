@@ -1,7 +1,24 @@
-function verificarTutela() {
-    // Recuperar el objeto tutela del sessionStorage
-    let tutela = JSON.parse(sessionStorage.getItem("cxm_tutela"));
+// Obtén el valor del campo 'tipo medio contacto'
+var tipoMedioContacto = formContext.getAttribute("tipo_medio_contacto").getValue();
 
-    // Verificar si la propiedad tutela existe y es verdadera
-    return tutela && tutela.tutela === true;
+// Define los campos relacionados
+var telefonoContacto = formContext.getAttribute("telefono_contacto");
+var direccionContacto = formContext.getAttribute("direccion_contacto");
+var agendaVisita = formContext.getAttribute("agenda_visita");
+var agendaCita = formContext.getAttribute("agenda_cita");
+
+// Haz que los campos sean opcionales por defecto
+telefonoContacto.setRequiredLevel("none");
+direccionContacto.setRequiredLevel("none");
+agendaVisita.setRequiredLevel("none");
+agendaCita.setRequiredLevel("none");
+
+// Verifica el valor y establece la obligatoriedad según corresponda
+if (tipoMedioContacto === "sms" || tipoMedioContacto === "llamada") {
+    telefonoContacto.setRequiredLevel("required");
+} else if (tipoMedioContacto === "visita") {
+    direccionContacto.setRequiredLevel("required");
+    agendaVisita.setRequiredLevel("required");
+} else if (tipoMedioContacto === "cita") {
+    agendaCita.setRequiredLevel("required");
 }
