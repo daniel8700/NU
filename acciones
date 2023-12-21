@@ -1,25 +1,10 @@
-En el contexto de Dynamics 365, puedes utilizar el objeto `Xrm` para obtener el usuario actual y compararlo con el `ownerid` del registro. Aquí te dejo un ejemplo:
-
-```javascript
 function esPropietarioActual() {
-    // Obtener el contexto del formulario
-    var formContext = Xrm.Page;
+    // Obtener el propietario actual del registro
+    var owneridRegistro = Xrm.Page.getAttribute("ownerid").getValue();
 
-    // Obtener el ownerid del registro
-    var owneridRegistro = formContext.getAttribute("ownerid").getValue();
-
-    // Obtener el usuario actual
+    // Obtener el ID del usuario actual
     var usuarioActual = Xrm.Utility.getGlobalContext().userSettings.userId;
 
     // Comparar el ownerid con el usuario actual
     return owneridRegistro && owneridRegistro[0].id === usuarioActual;
 }
-
-// Ejemplo de uso
-var resultado = esPropietarioActual();
-
-// 'resultado' ahora contiene true si son iguales, false si no lo son
-console.log(resultado);
-```
-
-Este código asume que estás trabajando en el contexto de un formulario de Dynamics 365 y que tienes un campo llamado "ownerid". Asegúrate de ajustar el código según tus necesidades y la configuración específica de tu entidad en Dynamics 365.
