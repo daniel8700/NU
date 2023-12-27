@@ -1,5 +1,5 @@
-// ObtÃ©n el valor actual de sessionStorage y parsea como objeto
-var tutelaObj = JSON.parse(sessionStorage.getItem('cxm_tutela')) || {};
+// Obtiene el valor actual de sessionStorage y parsea como objeto o crea un objeto vacÃ­o si no existe
+var tutelaObj = JSON.parse(sessionStorage.getItem('cxm_tutela')) || {"tutela": false};
 
 // Actualiza el valor de "tutela" a true
 tutelaObj.tutela = true;
