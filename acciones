@@ -1,14 +1,11 @@
-// ObtÃ©n el valor actual de sessionStorage o establece false si aÃºn no existe
-var miVariable = sessionStorage.getItem('miVariable') || 'false';
+// ObtÃ©n el valor actual de sessionStorage y parsea como objeto
+var tutelaObj = JSON.parse(sessionStorage.getItem('cxm_tutela')) || {};
 
-// FunciÃ³n que cambia el valor a true y actualiza sessionStorage
-function cambiarValorTrue() {
-  miVariable = 'true';
-  sessionStorage.setItem('miVariable', miVariable);
-}
+// Actualiza el valor de "tutela" a true
+tutelaObj.tutela = true;
 
-// Puedes llamar a la funciÃ³n cuando sea necesario
-cambiarValorTrue();
+// Almacena el objeto actualizado en sessionStorage
+sessionStorage.setItem('cxm_tutela', JSON.stringify(tutelaObj));
 
-// Ahora miVariable tiene el valor true almacenado en sessionStorage
-console.log(miVariable);
+// Verifica el resultado
+console.log(sessionStorage.getItem('cxm_tutela'));
