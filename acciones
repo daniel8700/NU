@@ -1,11 +1,35 @@
-// Obtiene el valor actual de sessionStorage y parsea como objeto o crea un objeto vacÃ­o si no existe
-var tutelaObj = JSON.parse(sessionStorage.getItem('cxm_tutela')) || {"tutela": false};
-
-// Actualiza el valor de "tutela" a true
-tutelaObj.tutela = true;
-
-// Almacena el objeto actualizado en sessionStorage
-sessionStorage.setItem('cxm_tutela', JSON.stringify(tutelaObj));
-
-// Verifica el resultado
-console.log(sessionStorage.getItem('cxm_tutela'));
+async function ManageForms(mercado) {
+            if (mercado) { // Mercado Abierto Form
+                const stageBPF = formContext.getAttribute(dataForm.fields.bpfStage).getValue();
+                if (stageBPF.includes("Contactar")) {
+                    let opcionRespuesta = formContext.getAttribute(dataForm.fields.respuestaOpcion);
+                    opcionRespuesta.setValue(2);
+                    if (!Boolean(sessionStorage.getItem("nextStageBPFLoad"))) {
+                        sessionStorage.setItem("nextStageBPFLoad", true)
+                        top.window.location.reload();
+                    } else {
+                        await formContext.data.entity.save()
+                        formContext.data.process.moveNext();
+                        sessionStorage.removeItem("nextStageBPFLoad");
+                    }
+                }
+                intervalStatusMA = setInterval(() => {
+                    Santander.BpfJS.RedireccionGridMA();
+                }, 5000);
+                formContext.data.process.addOnPreStageChange(handleOnPreChangeStage);
+ 
+            } else { // Accion Comercial Form
+                intervalStatus = setInterval(() => {
+                    Santander.BpfJS.RedireccionGridACC();
+                }, 5000);
+                formContext.getAttribute(dataForm.fields.banderaCierre).setValue(false);
+                formContext.data.process.addOnPreStageChange(handleOnPreChangeStage);
+                if (Santander.BpfJS.permisoEjecutivo(formContext)) {
+                    bloqueoFicha = true;
+                    formContext.data.process.addOnPreStageChange(handleBlockChangeStage);
+                } else {
+                    bloqueoFicha = false;
+                }
+            }
+            Santander.BpfJS.AppInsightsMetricas("ManageForms");
+        }
